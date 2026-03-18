@@ -7,6 +7,22 @@ const { createCanvas, GlobalFonts } = require("@napi-rs/canvas")
 
 const rootDir = path.resolve(__dirname, "..")
 const lucideFontPath = path.join(rootDir, "node_modules", "lucide-static", "font", "lucide.ttf")
+const openSansRegularFontPath = path.join(
+  rootDir,
+  "node_modules",
+  "@fontsource",
+  "open-sans",
+  "files",
+  "open-sans-latin-400-normal.woff"
+)
+const openSansBoldFontPath = path.join(
+  rootDir,
+  "node_modules",
+  "@fontsource",
+  "open-sans",
+  "files",
+  "open-sans-latin-700-normal.woff"
+)
 const lucideCodepointsPath = path.join(
   rootDir,
   "node_modules",
@@ -15,6 +31,7 @@ const lucideCodepointsPath = path.join(
   "codepoints.json"
 )
 let lucideFontRegistered = false
+let emulatorTextFontsRegistered = false
 let lucideCodepoints = null
 
 const DEFAULT_DRAW_CONTEXT_SCALE = 2
@@ -74,6 +91,22 @@ function ensureLucideFontRegistered() {
   }
 }
 
+function ensureEmulatorTextFontsRegistered() {
+  if (emulatorTextFontsRegistered) {
+    return
+  }
+
+  if (fsSync.existsSync(openSansRegularFontPath)) {
+    GlobalFonts.registerFromPath(openSansRegularFontPath, "EmulatorOpenSansRegular")
+  }
+
+  if (fsSync.existsSync(openSansBoldFontPath)) {
+    GlobalFonts.registerFromPath(openSansBoldFontPath, "EmulatorOpenSansBold")
+  }
+
+  emulatorTextFontsRegistered = true
+}
+
 function getLucideCodepoints() {
   if (!lucideCodepoints) {
     lucideCodepoints = JSON.parse(fsSync.readFileSync(lucideCodepointsPath, "utf8"))
@@ -102,6 +135,12 @@ function getSymbolGlyph(symbolName) {
 
 function fontCss(font, overrideFamily = null) {
   if (!overrideFamily) {
+    if (font.name === "system-ui") {
+      ensureEmulatorTextFontsRegistered()
+      const family = Number(font.weight) >= 600 ? "EmulatorOpenSansBold" : "EmulatorOpenSansRegular"
+      return `${font.style} ${font.weight} ${font.size}px ${family}`
+    }
+
     return font.toCss()
   }
 
@@ -446,7 +485,7 @@ class DrawContext {
 
   setFont(font) {
     this._font = font
-    this.ctx.font = font.toCss()
+    this.ctx.font = fontCss(font)
   }
 
   setTextColor(color) {
@@ -500,7 +539,7 @@ class DrawContext {
 
   drawText(text, point) {
     this.ctx.save()
-    this.ctx.font = this._font.toCss()
+    this.ctx.font = fontCss(this._font)
     this.ctx.fillStyle = this._textColor.toRgba()
     this.ctx.textAlign = this._textAlignment
     this.ctx.fillText(text, point.x, point.y)
@@ -509,7 +548,7 @@ class DrawContext {
 
   drawTextInRect(text, rect) {
     this.ctx.save()
-    this.ctx.font = this._font.toCss()
+    this.ctx.font = fontCss(this._font)
     this.ctx.fillStyle = this._textColor.toRgba()
     this.ctx.textAlign = this._textAlignment
 

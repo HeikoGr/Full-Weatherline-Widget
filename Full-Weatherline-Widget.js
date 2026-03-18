@@ -1,7 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: pink; icon-glyph: sun;
-//
+// 
 
 // by italoboy and tnx to Max Zeryck for the original code
 
@@ -47,7 +47,7 @@ const forceImageUpdate = false
 const padding = 0
 
 // Number of hours shown in the hourly chart.
-const hoursToShow = 12
+const hoursToShow = 8
 
 // Number of days shown in the daily chart.
 const daysToShow = 4
@@ -81,6 +81,9 @@ const weatherSettings = {
   // "imperial" -> F, mph, inHg
   units: "metric",
 }
+
+// Save the last raw weather response to Scriptable documents for debugging.
+const saveWeatherApiResponse = true
 
 // Base palette for the entire widget.
 const palette = {
@@ -307,6 +310,8 @@ const i18n = {
       unsupportedWidgetSize: "Widget-Größe wird nicht unterstützt",
       noOfflineCache: "Kein Cache gespeichert und offline",
       missingSolarData: "Wetterdaten enthalten keine Sonnenauf- und Untergangsdaten",
+      invalidWeatherData: "OpenWeather hat unvollständige Wetterdaten geliefert",
+      weatherApiError: "OpenWeather-Fehler",
     },
     conditions: {
       clearSky: "Klarer Himmel",
@@ -384,6 +389,8 @@ const i18n = {
       unsupportedWidgetSize: "Widget size not supported",
       noOfflineCache: "No cache saved but you are offline",
       missingSolarData: "Weather data does not contain sunrise/sunset information",
+      invalidWeatherData: "OpenWeather returned incomplete weather data",
+      weatherApiError: "OpenWeather error",
     },
     conditions: {
       clearSky: "Clear sky",
@@ -954,6 +961,65 @@ async function setupSolarData() {
   }
 }
 
+function hasValidWeatherData(data) {
+  data = normalizeWeatherData(data)
+
+  return !!(
+    data &&
+    data.current &&
+    Array.isArray(data.hourly) &&
+    data.hourly.length > 0 &&
+    Array.isArray(data.daily) &&
+    data.daily.length > 1
+  )
+}
+
+function normalizeWeatherData(data) {
+  if (
+    data &&
+    typeof data === "object" &&
+    !data.current &&
+    data.payload &&
+    typeof data.payload === "object"
+  ) {
+    return data.payload
+  }
+
+  return data 
+}
+
+function getWeatherDataError(data, requestError) {
+  if (data && typeof data === "object" && data.message) {
+    return t("errors.weatherApiError") + ": " + data.message
+  }
+
+  if (requestError && requestError.message) {
+    return t("errors.weatherApiError") + ": " + requestError.message
+  }
+
+  return t("errors.invalidWeatherData")
+}
+
+function saveWeatherResponseSnapshot(data, source) {
+  if (!saveWeatherApiResponse || !data) {
+    return
+  }
+
+  const debugPath = files.joinPath(files.documentsDirectory(), "weather-cal-api-response.json")
+  const snapshot = {
+    savedAt: new Date().toISOString(),
+    source,
+    valid: hasValidWeatherData(data),
+    payload: data,
+  }
+
+  try {
+    files.writeString(debugPath, JSON.stringify(snapshot, null, 2))
+  } catch (e) {
+    console.log("Could not write weather debug file: " + e)
+  }
+}
+
 // Set up the weatherData object.
 async function setupWeather() {
   // Requirements: location
@@ -966,11 +1032,13 @@ async function setupWeather() {
   const cacheExists = files.fileExists(cachePath)
   const cacheDate = cacheExists ? files.modificationDate(cachePath) : 0
   var weatherDataRaw
+  let requestError = null
 
   // If cache exists and it's been less than 60 seconds since last request, use cached data.
   if (cacheExists && currentDate.getTime() - cacheDate.getTime() < 60000) {
     const cache = files.readString(cachePath)
-    weatherDataRaw = JSON.parse(cache)
+    weatherDataRaw = normalizeWeatherData(JSON.parse(cache))
+    saveWeatherResponseSnapshot(weatherDataRaw, "cache")
 
     // Otherwise, use the API to get new weather data.
   } else {
@@ -990,15 +1058,23 @@ async function setupWeather() {
         languageCode +
         "&appid=" +
         apiKey
-      weatherDataRaw = await new Request(weatherReq).loadJSON()
+      weatherDataRaw = normalizeWeatherData(await new Request(weatherReq).loadJSON())
+      saveWeatherResponseSnapshot(weatherDataRaw, "api")
     } catch (e) {
-      const cachePath = files.joinPath(files.documentsDirectory(), "weather-cal-cache")
+      requestError = e
+    }
+
+    if (!hasValidWeatherData(weatherDataRaw)) {
       if (files.fileExists(cachePath)) {
-        weatherDataRaw = JSON.parse(files.readString(cachePath))
-      } else {
-        throw t("errors.noOfflineCache")
+        weatherDataRaw = normalizeWeatherData(JSON.parse(files.readString(cachePath)))
+        saveWeatherResponseSnapshot(weatherDataRaw, "cache-fallback")
+      }
+
+      if (!hasValidWeatherData(weatherDataRaw)) {
+        throw getWeatherDataError(weatherDataRaw, requestError)
       }
     }
+
     let updateddate = new Date()
     let hourupdate = updateddate.getHours()
     let minupdate = updateddate.getMinutes()
