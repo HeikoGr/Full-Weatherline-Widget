@@ -1,0 +1,23 @@
+{
+  "name": "full-weatherline-widget",
+  "private": true,
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "preview": "node emulator/watch.js --serve --open"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.80",
+    "lucide-static": "^0.577.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/scriptable-ios": "^1.7.8",
+    "eslint": "^10.0.3",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.1"
+  }
+} 

@@ -1,0 +1,7 @@
+node_modules
+emulator-output
+.scriptable-documents
+package-lock.json
+*.jpeg
+*.jpg
+*.png

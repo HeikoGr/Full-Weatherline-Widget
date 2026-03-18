@@ -1,0 +1,15 @@
+{
+  "widgetFamily": "large",
+  "widgetSizes": {
+    "large": { "width": 360, "height": 379 },
+    "medium": { "width": 360, "height": 170 },
+    "small": { "width": 170, "height": 170 }
+  },
+  "locale": "de-DE",
+  "useMockWeather": true,
+  "location": {
+    "latitude": 50.29,
+    "longitude": 10.28,
+    "locality": "Erfurt"
+  }
+}

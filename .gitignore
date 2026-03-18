@@ -1,0 +1,5 @@
+.scriptable-documents/weather-cal-cache
+emulator-output/widget-tree.json
+emulator-output/widget-preview.html
+node_modules/*
+.scriptable-documents/weather-cal-loc
