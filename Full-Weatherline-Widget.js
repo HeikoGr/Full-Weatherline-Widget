@@ -3,89 +3,190 @@
 // icon-color: pink; icon-glyph: sun;
 //
 
-// by italoboy and tnx to Max Zeryck for the original code 
+// by italoboy and tnx to Max Zeryck for the original code
 
 // Special tnx to thewaytozion for creating this idea.
 // Special tnx to P Jai Rjlin for assisting.
 
-// 
+/// <reference path="./node_modules/@types/scriptable-ios/index.d.ts" />
 
 /*
  * SETUP
- * Use this section to set up the widget.
- * ======================================
+ * Edit this section to change API key, units, colors, and behavior.
+ * ================================================================
  */
 
- /// <reference path="../scriptable.d.ts" />
-
-// To use weather, get a free API key at openweathermap.org/appid and paste it in between the quotation marks.
+// Get a free API key at https://openweathermap.org/appid
 const apiKey = ""
 
-// Set the locale code. Leave blank "" to match the device's locale. You can change the hard-coded text strings in the TEXT section below.
+// Language code for weather descriptions and date labels.
+// Leave blank ("") to use the device's language automatically.
+// Examples: "en", "de"
 let locale = ""
 
-// Set to true for fixed location, false to update location as you move around
-const lockLocation = true
-
-// The size of the widget preview in the app.
-const widgetPreview = "large"
-
-// Set to true for an image background, false for no image.
-const imageBackground = false
-
-// Set to true to reset the widget's background image.
-const forceImageUpdate = false
-
-// Set the padding around each item. Default is 5.
-const padding = 0
-
-// hoursToShow : number > Number of predicted hours to show, Eg: 3 = a total of 4 hours in the widget (Default: 3 for the small widget and 11 for the medium one).
-const hoursToShow = 9
-const daysToShow = 6
- //(max 6)
-
-// roundedGraph : true|false > true (Use
-// rounded values to draw the graph) 
-const roundedGraph = true
-const roundedTemp = true
-
-// 12 hours time
-const _12Hours = true
-const diagram12Hours = false
-
-// open link
+// URL to open when the widget is tapped.
+// Leave blank to open the default weather.com page for your location.
 const externalLink = ""
 
-//define global var
-var night = true
+// true  = GPS is only read once, then the result is cached.
+// false = location is refreshed on every widget update.
+const lockLocation = true
 
-//show alerts
-var showAlerts = false
+// Preview size when running the script directly in the Scriptable app.
+// Has no effect on the actual home screen widget. Values: "large" | "medium"
+const widgetPreview = "large"
 
-// accentColor : Color > Accent color of some elements (Graph lines and the location label).
-const accentColor = new Color("#FFB01F", 1)
-const nightColor = new Color("#616363", 1)
-const linecolor = new Color("#A5A8A8", 1)
-const rainColor= new Color("#3DADF2", 1)
+// true  = use a photo from your library as a transparent background.
+// false = use the built-in time-of-day gradient.
+const imageBackground = false
 
-// in case you do not want shadow change opacity to 0 
-const shadow1 = new Color("#111111", 0.4)
-const shadow2 = new Color("#111111", 0.2)
-const shadow3 = new Color("#111111", 0.1)
+// Set to true once to trigger a new photo selection, then set back to false.
+const forceImageUpdate = false
 
-let drawContext = new DrawContext();
+// Padding (in points) added around each widget item.
+const padding = 0
 
-const horizontalPad = padding < 10 ? 10 - padding : 10
-const verticalPad = padding < 15 ? 15 - padding : 15
+// Number of hours shown in the hourly chart.
+const hoursToShow = 12
 
+// Number of days shown in the daily chart.
+const daysToShow = 4
 
-// did not follow up at upper definitions & set DrawContext Size to fixed value - matching iPhone 11 Pro Max
-drawContext.size = new Size(665,260)
-drawContext.opaque = false
-drawContext.setTextAlignedCenter()
-// define distances (x-axis) of icons
-const spaceBetweenHours = 63
-const spaceBetweenDays = 94
+// Round temperature values to whole numbers in the chart line.
+const roundedGraph = true
+
+// Round displayed temperature numbers throughout the widget.
+const roundedTemp = true
+
+// true = 12-hour clock (AM/PM) in sunrise/sunset labels and data rows.
+const _12Hours = false
+
+// true = 12-hour clock for hour labels inside the hourly diagram.
+const diagram12Hours = false
+
+// Show active weather alerts at the bottom of the widget.
+const showAlerts = true
+
+// Enable drop shadows on text and chart lines for a more dimensional look.
+const showShadows = false
+
+const sunriseSettings = {
+  // How many minutes before or after sunrise/sunset the sunrise element is shown.
+  // Set to 0 to always show it regardless of time of day.
+  showWithin: 0,
+}
+
+const weatherSettings = {
+  // "metric"   -> C, m/s, hPa
+  // "imperial" -> F, mph, inHg
+  units: "metric",
+}
+
+// Base palette for the entire widget.
+const palette = {
+  textPrimary: "#F8FAFC",
+  textSecondary: "#DCE3EA",
+  textMuted: "#C7D0D9",
+  line: "#E2E8F0",
+  night: "#B7C2CC",
+  accent: "#FFC857",
+  rain: "#7DD3FC",
+  warning: "#FFE08A",
+}
+
+// Fonts: use a system weight such as "light", "regular", or "bold".
+// Colors: 6-digit hex without the leading #. Leave blank to inherit defaultText.
+const textFormat = {
+  defaultText: { size: 14, color: palette.textPrimary.slice(1), font: "regular" },
+
+  largeTemp: { size: 34, color: "", font: "light" },
+  smallTemp: { size: 14, color: "", font: "" },
+  tinyTemp: { size: 12, color: "", font: "" },
+
+  customText: { size: 10, color: palette.textSecondary.slice(1), font: "light" },
+
+  smallDate: { size: 14, color: "", font: "semibold" },
+  largeDate1: { size: 30, color: "", font: "light" },
+  largeDate2: { size: 26, color: "", font: "semibold" },
+  sunrise: { size: 14, color: "", font: "medium" },
+
+  location: { size: 14, color: "", font: "semibold", opacity: 1 },
+  desconly: { size: 12, color: "", font: "regular", opacity: 1 },
+  HiLotemp: { size: 12, color: "", font: "regular", opacity: 1 },
+  databtm: { size: 10, color: palette.textPrimary.slice(1), font: "bold", opacity: 1 },
+  databtmtxt: { size: 10, color: palette.textSecondary.slice(1), font: "regular", opacity: 1 },
+  updatetxt: { size: 8, color: palette.textMuted.slice(1), font: "light", opacity: 1 },
+  warning: { size: 12, color: palette.warning.slice(1), font: "bold" },
+  alertstxt: { size: 10, color: palette.accent.slice(1), font: "bold", opacity: 1 },
+}
+
+// Accent colors built from the palette hex values.
+const accentColor = new Color(palette.accent, 1)
+const nightColor = new Color(palette.night, 1)
+const linecolor = new Color(palette.line, 1)
+const rainColor = new Color(palette.rain, 1)
+
+// Shadow overlays — opacity is 0 when showShadows is false.
+const shadowOpacity = showShadows ? 1 : 0
+const shadow1 = new Color("#111111", 0.4 * shadowOpacity)
+const shadow2 = new Color("#111111", 0.2 * shadowOpacity)
+const shadow3 = new Color("#111111", 0.1 * shadowOpacity)
+
+const diagramSettings = {
+  canvas: {
+    width: 665,
+    height: 260,
+  },
+  shared: {
+    fromLeft: 50,
+    topRuleY: 15,
+    bottomRuleY: 255,
+    graphLineY: 176,
+    graphShadowLowY: 177,
+    graphHighlightY: 175,
+    verticalBottomY: 215,
+    verticalHeightOffset: 40,
+    iconY: 155,
+    labelY: 220,
+    heightDiff: 80,
+  },
+  hourly: {
+    verticalXOffset: 2,
+    iconXOffset: 33,
+    labelXOffset: 25,
+    labelWidth: 50,
+    labelHeight: 21,
+    currentTemp: {
+      fontSize: 40,
+      xOffset: 12,
+      y: 112,
+      width: 100,
+      height: 42,
+    },
+    forecastTemp: {
+      fontSize: 20,
+      xOffset: 32,
+      y: 130,
+      width: 50,
+      height: 21,
+    },
+  },
+  daily: {
+    verticalXOffset: 2,
+    iconXOffset: 33,
+    textXOffset: 32,
+    labelXOffset: 25,
+    labelWidth: 55,
+    labelHeight: 21,
+    tempFontSize: 20,
+    tempWidth: 50,
+    tempHeight: 21,
+    maxTempY: 130,
+    minTempY: 195,
+  },
+}
+
+let drawContext = createDiagramContext()
 
 /*
  * LAYOUT
@@ -102,230 +203,263 @@ const spaceBetweenDays = 94
 // There are many possible items, including: date, greeting, events, current, future, battery, sunrise, and text("Your text here")
 // Make sure to always put a comma after each item.
 
+// prettier-ignore
 const items = [
- 	
- 	row(17),
+  row(17),
+    column,      left,   currentLoc,
+    column,      center,     space,
+    column,      right,  maxtemp,
 
-		column(200),
-            space(1),
-			left,
-			currentLoc,
-			
-		
-		column,
-		    space(3),
-			right,
-      maxtemp,
+  row(13),
+    column,        left,   desconly,
+    column,        center, offline,
+    column,        right,  mintemp,
 
-    row(13),
+  row(130),
+    column,   center,   drawdiagram,
 
-      column(115),
-      
-      left,
-      desconly,
-
-      column,
-      
-      center,
-      offline,
-      
-      
-      column(115),
-      
-      right,
-      mintemp,
-	row(130),
-
-		column,
-			center,
-			drawdiagram,
-/* */
-  	row(130),
-        column,
-			center,
-			drawdiagramdaily,
-
+  row(130),
+    column,   center,   drawdiagramdaily,
 
   row,
+    column(80),  left,  feelsliketxt,
+    column(80),  right, feelslike,
+    column(10),
+    column(80),  left,  sunriseonlytxt,
+    column(80),  right, sunriseonly,
 
-		column(95),
-	   		left,
-	   		feelsliketxt,
-     
-		column,
-			right,
-	   		feelslike,
-		
-		column(5),
+  row,
+    column(80),  left,  raintxt,
+    column(80),  right, rain,
+    column(10),
+    column(80),  left,  sunsetonlytxt,
+    column(80),  right, sunsetonly,
 
-		column(95),
-			left,
-			sunriseonlytxt,
-      	
-		column,
-			right,
-	    	sunriseonly,
-     
-	row,
+  row,
+    column(80),  left,  dewpointtxt,
+    column(80),  right, dewpoint,
+    column(10),
+    column(80),  left,  windtxt,
+    column(80),  right, wind,
 
-		column(95),
-			left,
-	   		raintxt,
-  
-		column,
-			right,
-	   		rain,
-		
-		column(5),
-     	
-		column(95),
-			left,
-			sunsetonlytxt,
-     	
-		column,
-			right,
-	    	sunsetonly,
+  row,
+    column(80),  left,  humiditytxt,
+    column(80),  right, humidity,
+    column(10),
+    column(80),  left,  UVIndextxt,
+    column(80),  right, UVIndex,
 
-	row,
+  row,
+    column(80), left,  pressuretxt,
+    column(80), right, pressure,
+    column(10),
+    column(80), left,  cloudstxt,
+    column(80), right, clouds,
 
-	    column(90),
-			left,
-	    	dewpointtxt,
-     
-		column,
-			right,
-	    	dewpoint,
-		
-		column(5),
-     
-		column(90),
-			left,
-	    	windtxt,
-     	
-		column,
-			right,
-	    	wind,
+  row,
+    column(160), left,  alerts,
+    column(10),
+    column(160), right, updatedtime,
 
-	row,
-	   	column(105),
-			left,
-	   		humiditytxt,
- 
-		column,
-			right,
-	   		humidity,
-		
-		column(5),
-
-		column(105),
-			left,
-	   		UVIndextxt,
-     	
-		column,
-			right,
-	   		UVIndex,
-
-	row,
-	   	column(95),
-			left,
-	   		pressuretxt,
-
-	  	column,
-	  		right,
-			pressure,
-		
-		column(5),
-	   		
-	
-		column(95),
-			left,
-	   		cloudstxt,
-     	
-		column,
-			right,
-	   		clouds,
-	/* */
-
-	row,
-        
-	column(260),
-			left,
-        		alerts,
-	
-	column(5),
-	
-        column,
-			right,
-	   		updatedtime,
-
-    row,
-	  	column,
-		   	space,
-    	
+  row,
+    column,
+    space,
 ]
 
 if (widgetPreview === "small" || config.widgetFamily === "small") {
-	throw "Widget size not supported"
+  throw (locale || Device.locale()).toLowerCase().startsWith("de")
+    ? "Widget-Groesse wird nicht unterstuetzt"
+    : "Widget size not supported"
 }
 
+// Medium size: remove the detail rows below both diagrams.
 if (widgetPreview === "medium" || config.widgetFamily === "medium") {
-	items.splice(23, 80)
+  items.splice(23, 80)
 }
 
-// SUNRISE
-// =======
-const sunriseSettings = {
-  
-  // How many minutes before/after sunrise or sunset to show this element. 0 for always.
-  showWithin: 0
-}
-
-// WEATHER
-// =======
-const weatherSettings = {
-
-  // Set to imperial for Fahrenheit, or metric for Celsius
-  units: "metric"
-  
-}
-
-// Set the font, size, and color of various text elements. Use iosfonts.com to find fonts to use. If you want to use the default iOS font, set the font name to one of the following: ultralight, light, regular, medium, semibold, bold, heavy, black, or italic.
-const textFormat = {
-  
-  // Set the default font and color.
-  defaultText: { size: 14, color: "ffffff", font: "regular" },
-  
-  // Any blank values will use the default.
-  
-  largeTemp:   { size: 34, color: "", font: "light" },
-  smallTemp:   { size: 14, color: "", font: "" },
-  tinyTemp:    { size: 12, color: "", font: "" },
-  
-  customText:  { size: 10, color: "A5A8A8", font: "light" },
-  
-  sunrise:     { size: 14, color: "", font: "medium" },
-
-  location:     { size: 14, color: "", font: "semibold", opacity: 1},
-  desconly:  { size: 12, color: "", font: "regular", opacity: 1},
-  HiLotemp:     { size: 12, color: "", font: "regular", opacity: 1},
-  databtm:     { size: 10, color: "A5A8A8", font: "bold", opacity: 1},
-  databtmtxt:     { size: 10, color: "A5A8A8", font: "regular", opacity: 1},
-  updatetxt:     { size: 8, color: "A5A8A8", font: "light", opacity: 1},
-  warning:     { size: 12, color: "A5A8A8", font: "bold" },
-  alertstxt:     { size: 10, color: "FFB01F", font: "bold", opacity: 1},
+const i18n = {
+  de: {
+    labels: {
+      max: "Max:",
+      min: "Min:",
+      update: "Update:",
+      sunset: "Sonnenuntergang",
+      sunrise: "Sonnenaufgang",
+      feelsLike: "gefühlt",
+      rain: "Regen",
+      dewPoint: "Taupunkt",
+      humidity: "Luftfeuchte",
+      pressure: "Druck",
+      wind: "Wind",
+      uvIndex: "UV-Index",
+      clouds: "Wolken",
+    },
+    diagram: {
+      now: "Jetzt",
+      today: "Heute",
+      weekdays: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+    },
+    alerts: {
+      additionalOne: "weitere Warnung",
+      additionalMany: "weitere Warnungen",
+    },
+    errors: {
+      unsupportedWidgetSize: "Widget-Größe wird nicht unterstützt",
+      noOfflineCache: "Kein Cache gespeichert und offline",
+      missingSolarData: "Wetterdaten enthalten keine Sonnenauf- und Untergangsdaten",
+    },
+    conditions: {
+      clearSky: "Klarer Himmel",
+      fewClouds: "Leicht bewölkt",
+      scatteredClouds: "Aufgelockerte Bewölkung",
+      brokenClouds: "Stark bewölkt",
+      overcastClouds: "bedeckt",
+      thunderstorm: "Gewitter",
+      drizzle: "Nieselregen",
+      rain: "Regen",
+      freezingRain: "gefrierender Regen",
+      snow: "Schnee",
+      sleet: "Schneeregen",
+      atmosphere: "Dunst",
+      mist: "Nebel",
+      smoke: "Rauch",
+      haze: "Dunst",
+      fog: "Nebel",
+      dust: "Staubig",
+      ash: "Vulkanasche",
+      squalls: "Boeen",
+      tornado: "Tornado",
+      cloudy: "Wolkig",
+    },
+    date: {
+      smallDateFormat: "EEEE, d. MMMM",
+      largeDateLineOne: "EEEE,",
+      largeDateLineTwo: "d. MMMM",
+    },
+    windDirections: [
+      "N",
+      "NNO",
+      "NO",
+      "ONO",
+      "O",
+      "OSO",
+      "SO",
+      "SSO",
+      "S",
+      "SSW",
+      "SW",
+      "WSW",
+      "W",
+      "WNW",
+      "NW",
+      "NNW",
+    ],
+  },
+  en: {
+    labels: {
+      max: "Max:",
+      min: "Min:",
+      update: "Update:",
+      sunset: "Sunset",
+      sunrise: "Sunrise",
+      feelsLike: "Feels Like",
+      rain: "Rain",
+      dewPoint: "Dew Point",
+      humidity: "Humidity",
+      pressure: "Pressure",
+      wind: "Wind",
+      uvIndex: "UV-Index",
+      clouds: "Clouds",
+    },
+    diagram: {
+      now: "Now",
+      today: "Today",
+      weekdays: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+    },
+    alerts: {
+      additionalOne: "more alert",
+      additionalMany: "more alerts",
+    },
+    errors: {
+      unsupportedWidgetSize: "Widget size not supported",
+      noOfflineCache: "No cache saved but you are offline",
+      missingSolarData: "Weather data does not contain sunrise/sunset information",
+    },
+    conditions: {
+      clearSky: "Clear sky",
+      fewClouds: "Few clouds",
+      scatteredClouds: "Scattered clouds",
+      brokenClouds: "Broken clouds",
+      overcastClouds: "Overcast clouds",
+      thunderstorm: "Thunderstorm",
+      drizzle: "Drizzle",
+      rain: "Rain",
+      freezingRain: "Freezing rain",
+      snow: "Snow",
+      sleet: "Sleet",
+      atmosphere: "Haze",
+      mist: "Mist",
+      smoke: "Smoke",
+      haze: "Haze",
+      fog: "Fog",
+      dust: "Dust",
+      ash: "Volcanic ash",
+      squalls: "Squalls",
+      tornado: "Tornado",
+      cloudy: "Cloudy",
+    },
+    date: {
+      smallDateFormat: "EEEE, MMMM d",
+      largeDateLineOne: "EEEE,",
+      largeDateLineTwo: "MMMM d",
+    },
+    windDirections: [
+      "N",
+      "NNE",
+      "NE",
+      "ENE",
+      "E",
+      "ESE",
+      "SE",
+      "SSE",
+      "S",
+      "SSW",
+      "SW",
+      "WSW",
+      "W",
+      "WNW",
+      "NW",
+      "NNW",
+    ],
+  },
 }
 
 /*
  * WIDGET CODE
- * Be more careful editing this section. 
+ * Be more careful editing this section.
  * =====================================
  */
 
 // Make sure we have a locale value.
-if (locale == "" || locale == null) { locale = Device.locale() }
+if (locale == "" || locale == null) {
+  locale = Device.locale()
+}
 
-// Declare the data variables.
-var eventData, locationData, sunData, weatherData
+const languageCode = getLanguageCode(locale)
+const strings = i18n[languageCode] || i18n.en
+const dateSettings = {
+  staticDateSize: "small",
+  smallDateFormat: strings.date.smallDateFormat,
+  largeDateLineOne: strings.date.largeDateLineOne,
+  largeDateLineTwo: strings.date.largeDateLineTwo,
+}
+
+// Mutable runtime flag: tracks whether the current rendering context is night-time.
+// Updated by isNight() and temporarily overridden by drawConditionSymbol().
+let night = true
+
+// Lazy-loaded data caches — populated on first access by their respective setup functions.
+let locationData, solarData, weatherData
 
 // Create global constants.
 const currentDate = new Date()
@@ -336,7 +470,6 @@ const files = FileManager.local()
  * ============
  */
 
-
 // Set up the widget with padding.
 const widget = new ListWidget()
 
@@ -344,7 +477,6 @@ externalLink && (widget.url = externalLink)
 
 widget.setPadding(3, 10, -3, 10)
 widget.spacing = -1.2
-
 
 // Set up the global variables.
 var currentRow = {}
@@ -358,12 +490,17 @@ var currentColumns = []
 var rowNeedsSetup = false
 
 // It's ASCII time!
-if (typeof items[0] == 'string') {
-  for (line of items[0].split(/\r?\n/)) { await processLine(line) }
+if (typeof items[0] == "string") {
+  for (const line of items[0].split(/\r?\n/)) {
+    await processLine(line)
+  }
 }
+
 // Otherwise, set up normally.
 else {
-  for (item of items) { await item(currentColumn) }
+  for (const item of items) {
+    await item(currentColumn)
+  }
 }
 
 /*
@@ -371,166 +508,113 @@ else {
  * ==================
  */
 
-// If it's an image background, display it.
 if (imageBackground) {
-  
-  // Determine if our image exists and when it was saved.
   const path = files.joinPath(files.documentsDirectory(), "weather-cal-image-eric")
   const exists = files.fileExists(path)
-  
-  // If it exists and an update isn't forced, use the cache.
-  if (exists && (config.runsInWidget || !forceImageUpdate)) {
-    widget.backgroundImage = files.readImage(path)
 
-  // If it's missing when running in the widget, use a gray background.
-  } else if (!exists && config.runsInWidget) {
-      widget.backgroundColor = Color.gray() 
-    
-  // But if we're running in app, prompt the user for the image.
+  if (exists && !forceImageUpdate) {
+    widget.backgroundImage = files.readImage(path)
+  } else if (!exists && !forceImageUpdate) {
+    widget.backgroundColor = Color.gray()
   } else {
-      const img = await Photos.fromLibrary()
-      widget.backgroundImage = img
-      files.writeImage(path, img)
+    const img = await Photos.fromLibrary()
+    widget.backgroundImage = img
+    files.writeImage(path, img)
   }
-    
-// If it's not an image background, show the gradient.
 } else {
   let gradient = new LinearGradient()
   let gradientSettings = await setupGradient()
   gradient.colors = gradientSettings.color()
   gradient.locations = gradientSettings.position()
-  
-  widget.backgroundGradient = gradient
 
+  widget.backgroundGradient = gradient
 }
-// Finish the widget and show a preview.
+
 Script.setWidget(widget)
-if (["medium", "large"].includes(widgetPreview)) { widget["present" + widgetPreview.charAt(0).toUpperCase() + widgetPreview.slice(1)]() }
+if (["medium", "large"].includes(widgetPreview)) {
+  widget["present" + widgetPreview.charAt(0).toUpperCase() + widgetPreview.slice(1)]()
+}
 Script.complete()
 
-/*
- * ASCII FUNCTIONS
- * Now isn't this a lot of fun?
- * ============================
- */
-
-// Provide the named function.
-function provideFunction(name) {
-  const functions = {
-    space() { return space },
-    left() { return left },
-    right() { return right },
-    center() { return center },
-    sunrise() { return sunrise },
-
-    currentLoc() { return currentLoc },
-    maxtemp() { return maxtemp },
-    mintemp() { return mintemp },
-    desconly() { return desconly },
-    drawdiagram() { return drawdiagram },
-   
-   	feelslike() { return feelslike },
-    sunriseonly() { return sunriseonly },
-    sunsetonly() { return sunsetonly },
-    rain() { return rain },
-    dewpoint() { return dewpoint },
-    wind() { return wind },
-    humidity() { return humidity },
-    UVIndex() { return UVIndex },
-    pressure() { return pressure },
-    clouds() { return clouds },
-  
-	feelsliketxt() { return feelsliketxt },
-    sunriseonlytxt() { return sunriseonlytxt },
-    sunsetonlytxt() { return sunsetonlytxt },
-    raintxt() { return raintxt },
-    dewpointtxt() { return dewpointtxt },
-    windtxt() { return windtxt },
-    humiditytxt() { return humiditytxt },
-    UVIndextxt() { return UVIndextxt },
-    pressuretxt() { return pressuretxt },
-    cloudstxt() { return cloudstxt },
-    
-
-    updatedtime() { return updatedtime },
-    alerts() { return alerts },
- 	  drawdiagramdaily() { return drawdiagramdaily },
- 
-  }
-  return functions[name]
-}
-
-// Processes a single line of ASCII. 
+// Processes a single line of ASCII.
 async function processLine(lineInput) {
-  
   // Because iOS loves adding periods to everything.
-  const line = lineInput.replace(/\.+/g,'')
-  
+  const line = lineInput.replace(/\.+/g, "")
+
   // If it's blank, return.
-  if (line.trim() == '') { return }
-  
+  if (line.trim() == "") {
+    return
+  }
+
   // If it's a line, enumerate previous columns (if any) and set up the new row.
-  if (line[0] == '-' && line[line.length-1] == '-') { 
-    if (currentColumns.length > 0) { await enumerateColumns() }
+  if (line[0] == "-" && line[line.length - 1] == "-") {
+    if (currentColumns.length > 0) {
+      await enumerateColumns()
+    }
     rowNeedsSetup = true
     return
   }
-  
+
   // If it's the first content row, finish the row setup.
-  if (rowNeedsSetup) { 
+  if (rowNeedsSetup) {
     row(currentColumn)
-    rowNeedsSetup = false 
+    rowNeedsSetup = false
   }
-  
+
   // If there's a number, this is a setup row.
   const setupRow = line.match(/\d+/)
 
   // Otherwise, it has columns.
-  const items = line.split('|')
-  
+  const items = line.split("|")
+
   // Iterate through each item.
-  for (var i=1; i < items.length-1; i++) {
-    
+  for (var i = 1; i < items.length - 1; i++) {
     // If the current column doesn't exist, make it.
-    if (!currentColumns[i]) { currentColumns[i] = { items: [] } }
-    
+    if (!currentColumns[i]) {
+      currentColumns[i] = { items: [] }
+    }
+
     // Now we have a column to add the items to.
     const column = currentColumns[i].items
-    
+
     // Get the current item and its trimmed version.
     const item = items[i]
     const trim = item.trim()
-    
+
     // If it's not a function, figure out spacing.
-    if (!provideFunction(trim)) { 
-      
+    if (!provideFunction(trim)) {
       // If it's a setup row, whether or not we find the number, we keep going.
       if (setupRow) {
         const value = parseInt(trim, 10)
-        if (value) { currentColumns[i].width = value }
+        if (value) {
+          currentColumns[i].width = value
+        }
         continue
       }
-      
+
       // If it's blank and we haven't already added a space, add one.
-      const prevItem = column[column.length-1]
-      if (trim == '' && (!prevItem || (prevItem && !prevItem.startsWith("space")))) {
+      const prevItem = column[column.length - 1]
+      if (trim == "" && (!prevItem || (prevItem && !prevItem.startsWith("space")))) {
         column.push("space")
       }
-      
+
       // Either way, we're done.
       continue
-    
     }
-    
+
     // Determine the alignment.
     const index = item.indexOf(trim)
-    const length = item.slice(index,item.length).length
-    
+    const length = item.slice(index, item.length).length
+
     let align
-    if (index > 0 && length > trim.length) { align = "center" }
-    else if (index > 0) { align = "right" }
-    else { align = "left" }
-    
+    if (index > 0 && length > trim.length) {
+      align = "center"
+    } else if (index > 0) {
+      align = "right"
+    } else {
+      align = "left"
+    }
+
     // Add the items to the column.
     column.push(align)
     column.push(trim)
@@ -540,20 +624,21 @@ async function processLine(lineInput) {
 // Runs the function names in each column.
 async function enumerateColumns() {
   if (currentColumns.length > 0) {
-    for (col of currentColumns) {
-      
+    for (const col of currentColumns) {
       // If it's null, go to the next one.
-      if (!col) { continue }
-      
+      if (!col) {
+        continue
+      }
+
       // If there's a width, use the width function.
       if (col.width) {
         column(col.width)(currentColumn)
-        
-      // Otherwise, create the column normally.
+
+        // Otherwise, create the column normally.
       } else {
         column(currentColumn)
       }
-      for (item of col.items) {
+      for (const item of col.items) {
         const func = provideFunction(item)()
         await func(currentColumn)
       }
@@ -570,54 +655,70 @@ async function enumerateColumns() {
 
 // Makes a new row on the widget.
 function row(input = null) {
-
   function makeRow() {
     currentRow = widget.addStack()
     currentRow.layoutHorizontally()
     currentRow.setPadding(0, 0, 0, 0)
     currentColumn.spacing = 0
-    
+
     // If input was given, make a column of that size.
-    if (input > 0) { currentRow.size = new Size(0,input) }
+    if (input > 0) {
+      currentRow.size = new Size(0, input)
+    }
   }
-  
+
   // If there's no input or it's a number, it's being called in the layout declaration.
-  if (!input || typeof input == "number") { return makeRow }
-  
+  if (!input || typeof input == "number") {
+    return makeRow
+  }
+
   // Otherwise, it's being called in the generator.
-  else { makeRow() }
+  else {
+    makeRow()
+  }
 }
 
 // Makes a new column on the widget.
 function column(input = null) {
- 
   function makeColumn() {
     currentColumn = currentRow.addStack()
     currentColumn.layoutVertically()
     currentColumn.setPadding(0, 0, 0, 0)
     currentColumn.spacing = 0
-    
+
     // If input was given, make a column of that size.
-    if (input > 0) { currentColumn.size = new Size(input,0) }
+    if (input > 0) {
+      currentColumn.size = new Size(input, 0)
+    }
   }
-  
+
   // If there's no input or it's a number, it's being called in the layout declaration.
-  if (!input || typeof input == "number") { return makeColumn }
-  
+  if (!input || typeof input == "number") {
+    return makeColumn
+  }
+
   // Otherwise, it's being called in the generator.
-  else { makeColumn() }
+  else {
+    makeColumn()
+  }
 }
 
 // Create an aligned stack to add content to.
 function align(column) {
-  
   // Add the containing stack to the column.
   let alignmentStack = column.addStack()
   alignmentStack.layoutHorizontally()
-  
+
   // Get the correct stack from the alignment function.
   let returnStack = currentAlignment(alignmentStack)
   returnStack.layoutVertically()
+
+  if (currentAlignment === alignRight) {
+    returnStack.contentAlignment = "right"
+  } else if (currentAlignment === alignCenter) {
+    returnStack.contentAlignment = "center"
+  }
+
   return returnStack
 }
 
@@ -644,33 +745,45 @@ function alignCenter(alignmentStack) {
 }
 
 // This function adds a space, with an optional amount.
-function space(input = null) { 
-  
+function space(input = null) {
   // This function adds a spacer with the input width.
   function spacer(column) {
-  
     // If the input is null or zero, add a flexible spacer.
-    if (!input || input == 0) { column.addSpacer() }
-    
+    if (!input || input == 0) {
+      column.addSpacer()
+    }
+
     // Otherwise, add a space with the specified length.
-    else { column.addSpacer(input) }
+    else {
+      column.addSpacer(input)
+    }
   }
-  
+
   // If there's no input or it's a number, it's being called in the column declaration.
-  if (!input || typeof input == "number") { return spacer }
-  
+  if (!input || typeof input == "number") {
+    return spacer
+  }
+
   // Otherwise, it's being called in the column generator.
-  else { input.addSpacer() }
+  else {
+    input.addSpacer()
+  }
 }
 
 // Change the current alignment to right.
-function right(x) { currentAlignment = alignRight }
+function right(x) {
+  currentAlignment = alignRight
+}
 
 // Change the current alignment to left.
-function left(x) { currentAlignment = alignLeft }
+function left(x) {
+  currentAlignment = alignLeft
+}
 
 // Change the current alignment to center.
-function center(x) { currentAlignment = alignCenter }
+function center(x) {
+  currentAlignment = alignCenter
+}
 
 /*
  * SETUP FUNCTIONS
@@ -680,63 +793,104 @@ function center(x) { currentAlignment = alignCenter }
 
 // Set up the gradient for the widget background.
 async function setupGradient() {
-  
   // Requirements: sunrise
-  if (!sunData) { await setupSunrise() }
+  if (!solarData) {
+    await setupSolarData()
+  }
 
   let gradient = {
     dawn: {
-      color() { return [new Color("142C52"), new Color("1B416F"), new Color("62668B")] },
-      position() { return [0, 0.5, 1] },
+      color() {
+        return [new Color("142C52"), new Color("1B416F"), new Color("62668B")]
+      },
+      position() {
+        return [0, 0.5, 1]
+      },
     },
 
     sunrise: {
-      color() { return [new Color("274875"), new Color("766f8d"), new Color("f0b35e")] },
-      position() { return [0, 0.8, 1.5] },
+      color() {
+        return [new Color("274875"), new Color("766f8d"), new Color("f0b35e")]
+      },
+      position() {
+        return [0, 0.8, 1.5]
+      },
     },
 
     midday: {
-      color() { return [new Color("3a8cc1"), new Color("90c0df")] },
-      position() { return [0, 1] },
+      color() {
+        return [new Color("3a8cc1"), new Color("90c0df")]
+      },
+      position() {
+        return [0, 1]
+      },
     },
 
     noon: {
-      color() { return [new Color("b2d0e1"), new Color("80B5DB"), new Color("3a8cc1")] },
-      position() { return [-0.2, 0.2, 1.5] },
+      color() {
+        return [new Color("b2d0e1"), new Color("80B5DB"), new Color("3a8cc1")]
+      },
+      position() {
+        return [-0.2, 0.2, 1.5]
+      },
     },
 
     sunset: {
-      color() { return [new Color("32327A"), new Color("662E55"), new Color("7C2F43")] },
-      position() { return [0.1, 0.9, 1.2] },
+      color() {
+        return [new Color("32327A"), new Color("662E55"), new Color("7C2F43")]
+      },
+      position() {
+        return [0.1, 0.9, 1.2]
+      },
     },
 
     twilight: {
-      color() { return [new Color("021033"), new Color("16296b"), new Color("414791")] },
-      position() { return [0, 0.5, 1] },
+      color() {
+        return [new Color("021033"), new Color("16296b"), new Color("414791")]
+      },
+      position() {
+        return [0, 0.5, 1]
+      },
     },
 
     night: {
-      color() { return [new Color("16296b"), new Color("021033"), new Color("021033"), new Color("113245")] },
-      position() { return [-0.5, 0.2, 0.5, 1] },
+      color() {
+        return [new Color("16296b"), new Color("021033"), new Color("021033"), new Color("113245")]
+      },
+      position() {
+        return [-0.5, 0.2, 0.5, 1]
+      },
     },
   }
 
-  const sunrise = sunData.sunrise
-  const sunset = sunData.sunset
+  const sunrise = solarData.sunrise
+  const sunset = solarData.sunset
 
-  // Use sunrise or sunset if we're within 30min of it.
-  if (closeTo(sunrise)<=15) { return gradient.sunrise }
-  if (closeTo(sunset)<=15) { return gradient.sunset }
+  // Use sunrise or sunset if we're within 15 minutes of it.
+  if (closeTo(sunrise) <= 15) {
+    return gradient.sunrise
+  }
+  if (closeTo(sunset) <= 15) {
+    return gradient.sunset
+  }
 
-  // In the 30min before/after, use dawn/twilight.
-  if (closeTo(sunrise)<=45 && currentDate.getTime() < sunrise) { return gradient.dawn }
-  if (closeTo(sunset)<=45 && currentDate.getTime() > sunset) { return gradient.twilight }
+  // In the surrounding 45-minute window, use dawn/twilight.
+  if (closeTo(sunrise) <= 45 && currentDate.getTime() < sunrise) {
+    return gradient.dawn
+  }
+  if (closeTo(sunset) <= 45 && currentDate.getTime() > sunset) {
+    return gradient.twilight
+  }
 
   // Otherwise, if it's night, return night.
-  if (isNight(currentDate)) { return gradient.night }
+  if (isNight(currentDate)) {
+    return gradient.night
+  }
 
   // If it's around noon, the sun is high in the sky.
-  if (currentDate.getHours() == 12) { return gradient.noon }
+  if (currentDate.getHours() == 12) {
+    return gradient.noon
+  }
 
   // Otherwise, return the "typical" theme.
   return gradient.midday
@@ -744,7 +898,6 @@ async function setupGradient() {
 
 // Set up the locationData object.
 async function setupLocation() {
-
   locationData = {}
   const locationPath = files.joinPath(files.documentsDirectory(), "weather-cal-loc")
 
@@ -757,17 +910,23 @@ async function setupLocation() {
       locationData.latitude = location.latitude
       locationData.longitude = location.longitude
       locationData.locality = geocode[0].locality
-      files.writeString(locationPath, location.latitude + "|" + location.longitude + "|" + locationData.locality)
-    
-    } catch(e) {
+      files.writeString(
+        locationPath,
+        location.latitude + "|" + location.longitude + "|" + locationData.locality
+      )
+    } catch (e) {
       // If we fail in unlocked mode, read it from the cache.
-      if (!lockLocation) { readLocationFromFile = true }
-      
+      if (!lockLocation) {
+        readLocationFromFile = true
+      }
+
       // We can't recover if we fail on first run in locked mode.
-      else { return }
+      else {
+        return
+      }
     }
   }
-  
+
   // If our location is locked or we need to read from file, do it.
   if (lockLocation || readLocationFromFile) {
     const locationStr = files.readString(locationPath).split("|")
@@ -777,67 +936,30 @@ async function setupLocation() {
   }
 }
 
-// Set up the sunData object.
-async function setupSunrise() {
-
-  // Requirements: location
-  if (!locationData) { await setupLocation() }
-  
-  async function getSunData(date) {
-    try {
-      const req = "https://api.sunrise-sunset.org/json?lat=" + locationData.latitude + "&lng=" + locationData.longitude + "&formatted=0&date=" + date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDate()
-      const data = await new Request(req).loadJSON()
-      return data
-    } catch(e) {
-      const sunCachePath = files.joinPath(files.documentsDirectory(), "weather-cal-sunrise")
-      if (files.fileExists(sunCachePath)) {
-       return JSON.parse(files.readString(sunCachePath))
-      } else {
-        throw "No cache saved for sunrise but you are offline"
-      }
-      console.log(e.stack)
-    }
+// Set up the solarData object.
+async function setupSolarData() {
+  // Requirements: weather
+  if (!weatherData) {
+    await setupWeather()
   }
 
-  // Set up the sunrise/sunset cache.
-  const sunCachePath = files.joinPath(files.documentsDirectory(), "weather-cal-sunrise")
-  const sunCacheExists = files.fileExists(sunCachePath)
-  const sunCacheDate = sunCacheExists ? files.modificationDate(sunCachePath) : 0
-  let sunDataRaw
-
-  // If cache exists and was created today, use cached data.
-  if (sunCacheExists && sameDay(currentDate, sunCacheDate)) {
-    const sunCache = files.readString(sunCachePath)
-    sunDataRaw = JSON.parse(sunCache)
-  }
-  
-  // Otherwise, get the data from the server.
-  else {
-
-    sunDataRaw = await getSunData(currentDate)
-  
-    // Calculate tomorrow's date and get tomorrow's data.
-    let tomorrowDate = new Date()
-    tomorrowDate.setDate(currentDate.getDate() + 1)
-    const tomorrowData = await getSunData(tomorrowDate)
-    sunDataRaw.results.tomorrow = tomorrowData.results.sunrise
-    
-    // Cache the file.
-    files.writeString(sunCachePath, JSON.stringify(sunDataRaw))
+  if (!weatherData.current || !weatherData.daily || weatherData.daily.length < 2) {
+    throw t("errors.missingSolarData")
   }
 
-  // Store the timing values.
-  sunData = {}
-  sunData.sunrise = new Date(sunDataRaw.results.sunrise).getTime()
-  sunData.sunset = new Date(sunDataRaw.results.sunset).getTime()
-  sunData.tomorrow = new Date(sunDataRaw.results.tomorrow).getTime()
+  solarData = {
+    sunrise: epochToDate(weatherData.current.sunrise).getTime(),
+    sunset: epochToDate(weatherData.current.sunset).getTime(),
+    tomorrow: epochToDate(weatherData.daily[1].sunrise).getTime(),
+  }
 }
 
 // Set up the weatherData object.
 async function setupWeather() {
-
   // Requirements: location
-  if (!locationData) { await setupLocation() }
+  if (!locationData) {
+    await setupLocation()
+  }
 
   // Set up the cache.
   const cachePath = files.joinPath(files.documentsDirectory(), "weather-cal-cache")
@@ -846,40 +968,72 @@ async function setupWeather() {
   var weatherDataRaw
 
   // If cache exists and it's been less than 60 seconds since last request, use cached data.
-  if (cacheExists && (currentDate.getTime() - cacheDate.getTime()) < 60000) {
+  if (cacheExists && currentDate.getTime() - cacheDate.getTime() < 60000) {
     const cache = files.readString(cachePath)
     weatherDataRaw = JSON.parse(cache)
 
-  // Otherwise, use the API to get new weather data.
+    // Otherwise, use the API to get new weather data.
   } else {
     try {
-      let exclude = "minutely";
-      if (!showAlerts) exclude = exclude + ",alerts";
-      const weatherReq = "https://api.openweathermap.org/data/2.5/onecall?lat=" + locationData.latitude + "&lon=" + locationData.longitude + "&exclude=" + exclude + "&units=" + weatherSettings.units + "&lang=" + locale + "&appid=" + apiKey
+      let exclude = "minutely"
+      if (!showAlerts) exclude = exclude + ",alerts"
+      const weatherReq =
+        "https://api.openweathermap.org/data/3.0/onecall?lat=" +
+        locationData.latitude +
+        "&lon=" +
+        locationData.longitude +
+        "&exclude=" +
+        exclude +
+        "&units=" +
+        weatherSettings.units +
+        "&lang=" +
+        languageCode +
+        "&appid=" +
+        apiKey
       weatherDataRaw = await new Request(weatherReq).loadJSON()
-    } catch(e) {
+    } catch (e) {
       const cachePath = files.joinPath(files.documentsDirectory(), "weather-cal-cache")
       if (files.fileExists(cachePath)) {
         weatherDataRaw = JSON.parse(files.readString(cachePath))
       } else {
-        throw "No cache saved but you are offline"
+        throw t("errors.noOfflineCache")
       }
-      console.log(e.stack)
     }
     let updateddate = new Date()
     let hourupdate = updateddate.getHours()
     let minupdate = updateddate.getMinutes()
     if (hourupdate <= 9) hourupdate = "0" + hourupdate
     if (minupdate <= 9) minupdate = "0" + minupdate
-    let updatedstring =hourupdate+":"+minupdate
+    let updatedstring = hourupdate + ":" + minupdate
     weatherDataRaw.update = updatedstring
     files.writeString(cachePath, JSON.stringify(weatherDataRaw))
   }
 
   // Store the weather values.
-  weatherData = {}
   weatherData = weatherDataRaw
+}
 
+async function ensureLocationData() {
+  if (!locationData) {
+    await setupLocation()
+  }
+}
+
+async function ensureWeatherData() {
+  if (!weatherData) {
+    await setupWeather()
+  }
+}
+
+async function ensureSolarData() {
+  if (!solarData) {
+    await setupSolarData()
+  }
+}
+
+async function ensureWeatherAndSolarData() {
+  await ensureWeatherData()
+  await ensureSolarData()
 }
 
 /*
@@ -888,31 +1042,132 @@ async function setupWeather() {
  * ============================================
  */
 
+function provideFunction(name) {
+  const functions = {
+    alerts() {
+      return alerts
+    },
+    center() {
+      return center
+    },
+    clouds() {
+      return clouds
+    },
+    cloudstxt() {
+      return cloudstxt
+    },
+    currentLoc() {
+      return currentLoc
+    },
+    date() {
+      return date
+    },
+    desconly() {
+      return desconly
+    },
+    dewpoint() {
+      return dewpoint
+    },
+    dewpointtxt() {
+      return dewpointtxt
+    },
+    drawdiagram() {
+      return drawdiagram
+    },
+    drawdiagramdaily() {
+      return drawdiagramdaily
+    },
+    feelslike() {
+      return feelslike
+    },
+    feelsliketxt() {
+      return feelsliketxt
+    },
+    humidity() {
+      return humidity
+    },
+    humiditytxt() {
+      return humiditytxt
+    },
+    left() {
+      return left
+    },
+    maxtemp() {
+      return maxtemp
+    },
+    mintemp() {
+      return mintemp
+    },
+    pressure() {
+      return pressure
+    },
+    pressuretxt() {
+      return pressuretxt
+    },
+    rain() {
+      return rain
+    },
+    raintxt() {
+      return raintxt
+    },
+    right() {
+      return right
+    },
+    space() {
+      return space
+    },
+    sunriseonly() {
+      return sunriseonly
+    },
+    sunriseonlytxt() {
+      return sunriseonlytxt
+    },
+    sunsetonly() {
+      return sunsetonly
+    },
+    sunsetonlytxt() {
+      return sunsetonlytxt
+    },
+    updatedtime() {
+      return updatedtime
+    },
+    UVIndex() {
+      return UVIndex
+    },
+    UVIndextxt() {
+      return UVIndextxt
+    },
+    wind() {
+      return wind
+    },
+    windtxt() {
+      return windtxt
+    },
+  }
+
+  return functions[name]
+}
+
 // Display the date on the widget.
 async function date(column) {
-
-  // Requirements: events (if dynamicDateSize is enabled)
-  if (!eventData && dateSettings.dynamicDateSize) { await setupEvents() }
-
   // Set up the date formatter and set its locale.
   let df = new DateFormatter()
   df.locale = locale
-  
-  // Show small if it's hard coded, or if it's dynamic and events are visible.
-  if (dateSettings.staticDateSize == "small" || (dateSettings.dynamicDateSize && eventData.eventsAreVisible)) {
+
+  if (dateSettings.staticDateSize == "small") {
     let dateStack = align(column)
     dateStack.setPadding(padding, padding, padding, padding)
 
     df.dateFormat = dateSettings.smallDateFormat
     let dateText = provideText(df.string(currentDate), dateStack, textFormat.smallDate)
-    
-  // Otherwise, show the large date.
+
+    // Otherwise, show the large date.
   } else {
     let dateOneStack = align(column)
     df.dateFormat = dateSettings.largeDateLineOne
     let dateOne = provideText(df.string(currentDate), dateOneStack, textFormat.largeDate1)
-    dateOneStack.setPadding(padding/2, padding, 0, padding)
-    
+    dateOneStack.setPadding(padding / 2, padding, 0, padding)
+
     let dateTwoStack = align(column)
     df.dateFormat = dateSettings.largeDateLineTwo
     let dateTwo = provideText(df.string(currentDate), dateTwoStack, textFormat.largeDate2)
@@ -921,783 +1176,295 @@ async function date(column) {
 }
 
 async function drawdiagram(column) {
-  // Requirements: weather and sunrise
-	
-  if (!weatherData) { await setupWeather() }
-  if (!sunData) { await setupSunrise() }
-
-  
-  //define stack in which canvas will be drawn
-  let diagramStack = column.addStack()
-  diagramStack.layoutHorizontally()
-  diagramStack.setPadding(0, 0, 0, 0)
-  diagramStack.borderWidth = 0
-	drawLine(0,15,665,15, 1, linecolor)
-	// DRAW THE GRAPH
-  let min, max, diff;
-  for(let i = 0; i<=hoursToShow ;i++){
-    let temp = shouldRound(roundedGraph, weatherData.hourly[i].temp);
-    min = (temp < min || min == undefined ? temp : min)
-    max = (temp > max || max == undefined ? temp : max)
-	}
-
-  let fromLeft = 50
-  let heightDiff = 80
-	diff = max -min;
-	for(let i = 0; i<=hoursToShow ;i++){
-		let hourData = weatherData.hourly[i];
-		let nextHourTemp = shouldRound(roundedGraph, weatherData.hourly[i+1].temp);
-		let hour = epochToDate(hourData.dt).getHours();
-		if (diagram12Hours) {
-		  hour = (hour > 12 ? hour - 12 : (hour == 0 ? "12a" : ((hour == 12) ? "12p" : hour)))
-		}
-		let temp = i==0?weatherData.current.temp : hourData.temp
-		let delta = (diff>0)?(shouldRound(roundedGraph, temp) - min) / diff:0.5;
-		let nextDelta = (diff>0)?(nextHourTemp - min) / diff:0.5
-
-    if(i < hoursToShow){
-      let hourDay = epochToDate(hourData.dt);
-      for(let i2 = 0 ; i2 < weatherData.daily.length ; i2++){
-        let day = weatherData.daily[i2];
-        if(isSameDay(epochToDate(day.dt), epochToDate(hourData.dt))){
-          hourDay = day;
-          break;
-        }
-		  }
-      // 'Night' boolean for line graph and SFSymbols
-      night = (hourData.dt > hourDay.sunset || hourData.dt < hourDay.sunrise)    
-	
-		  drawLine(spaceBetweenHours * (i) + fromLeft, 176 - (heightDiff * delta),spaceBetweenHours * (i+1) + fromLeft , 176 - (heightDiff * nextDelta), 4, shadow1)
-		  drawLine(spaceBetweenHours * (i) + fromLeft, 177 - (heightDiff * delta),spaceBetweenHours * (i+1) + fromLeft , 177 - (heightDiff * nextDelta), 4, shadow2)
-      drawLine(spaceBetweenHours * (i) + fromLeft, 175 - (heightDiff * delta),spaceBetweenHours * (i+1) + fromLeft , 175 - (heightDiff * nextDelta), 4, (hourData.dt > hourDay.sunset || hourData.dt < hourDay.sunrise ? nightColor : accentColor))
-      
-    }
-
-    drawLine(spaceBetweenHours * (i) + fromLeft+2, 215 ,spaceBetweenHours * (i) + fromLeft + 2, 215 - (heightDiff * delta)-40, 2, linecolor)
-
-
-    // Next 2 lines SFSymbols tweak 
-    const condition = i==0?weatherData.current.weather[0].id:hourData.weather[0].id
-	  let conditionDigitvol= Math.floor(condition / 100)
-
-    if (i == 0 ) {
-      drawTextC(shouldRound(roundedTemp, temp)+"°", 40, spaceBetweenHours*i+33-20, 113 - (heightDiff*delta), 100, 42, shadow1)
-      drawTextC(shouldRound(roundedTemp, temp)+"°", 40, spaceBetweenHours*i+34-20, 114 - (heightDiff*delta), 100, 42, shadow2)
-      drawTextC(shouldRound(roundedTemp, temp)+"°", 40, spaceBetweenHours*i+35-20, 115 - (heightDiff*delta), 100, 42, shadow3)
-      if (night) {  
-		    drawTextC(shouldRound(roundedTemp, temp)+"°", 40, spaceBetweenHours*i+32-20, 112 - (heightDiff*delta), 100, 42, linecolor)
-        if ((conditionDigitvol===2) || ( conditionDigitvol===3) || (conditionDigitvol===5)){
-	    	  drawTextC(shouldRound(roundedTemp, temp)+"°", 40, spaceBetweenHours*i+32-20, 112 - (heightDiff*delta), 100, 42, rainColor)
-        } else if (conditionDigitvol===6) {
-          drawTextC(shouldRound(roundedTemp, temp)+"°", 40, spaceBetweenHours*i+32-20, 112 - (heightDiff*delta), 100, 42, Color.white())
-		    } else {
-	          drawTextC(shouldRound(roundedTemp, temp)+"°", 40, spaceBetweenHours*i+32-20, 112 - (heightDiff*delta), 100, 42, linecolor)
-        }
-      } else {
-	      if ((conditionDigitvol===2) || ( conditionDigitvol===3) || (conditionDigitvol===5)){
-	        drawTextC(shouldRound(roundedTemp, temp)+"°", 40, spaceBetweenHours*i+32-20, 112 - (heightDiff*delta), 100, 42, rainColor)
-        } else if (conditionDigitvol===6) {
-          drawTextC(shouldRound(roundedTemp, temp)+"°", 40, spaceBetweenHours*i+32-20, 112 - (heightDiff*delta), 100, 42, Color.white())
-		    } else {
-	        drawTextC(shouldRound(roundedTemp, temp)+"°", 40, spaceBetweenHours*i+32-20, 112 - (heightDiff*delta), 100, 42, accentColor)
-        }
-      }
-    } else {
-      drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenHours*i+33, 131 - (heightDiff*delta), 50, 21, shadow1)
-      drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenHours*i+34, 132 - (heightDiff*delta), 50, 21, shadow2)
-      drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenHours*i+35, 133 - (heightDiff*delta), 50, 21, shadow3)
-      if (night) {
-	      if ((conditionDigitvol===2) || ( conditionDigitvol===3) || (conditionDigitvol===5)){  
-	        drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenHours*i+32, 130 - (heightDiff*delta), 50, 21, rainColor)
-        } else if (conditionDigitvol===6) {
-	        drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenHours*i+32, 130 - (heightDiff*delta), 50, 21, Color.white())
-			  } else {
-	        drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenHours*i+32, 130 - (heightDiff*delta), 50, 21, linecolor)
-	      }
-      } else {
-        if ((conditionDigitvol===2) || ( conditionDigitvol===3) || (conditionDigitvol===5)){
-	        drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenHours*i+32, 130 - (heightDiff*delta), 50, 21, rainColor)
-        } else if (conditionDigitvol===6) {
-	        drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenHours*i+32, 130 - (heightDiff*delta), 50, 21, Color.white())
-		    } else {
-	       	drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenHours*i+32, 130 - (heightDiff*delta), 50, 21, accentColor)
-        }
-      }
-    }
-    drawImage(symbolForCondition(condition), spaceBetweenHours * i + 33, 155 - (heightDiff*delta)); //40, 165
-   
-    if (hour <=9) {
-    	hour = "0" + hour
-    }
-    drawTextC((i==0?"Now":hour), 18, spaceBetweenHours*i+26, 221,50, 21, shadow1)
-    drawTextC((i==0?"Now":hour), 18, spaceBetweenHours*i+27, 222,50, 21, shadow2)
-    drawTextC((i==0?"Now":hour), 18, spaceBetweenHours*i+28, 223,50, 21, shadow3)
-    if (night) {  
-      drawTextC((i==0?"Now":hour), 18, spaceBetweenHours*i+25, 220,50, 21, linecolor)
-    } else {
-      drawTextC((i==0?"Now":hour), 18, spaceBetweenHours*i+25, 220,50, 21, accentColor)
-    }
-    
-    previousDelta = delta;
-	}
-	// endo of for-loop
-	drawLine(0,255,665,255, 1, linecolor)
-	diagramStack.addImage(drawContext.getImage());
+  await ensureWeatherAndSolarData()
+  const hourlyDiagram = buildHourlyDiagramModel()
+  renderHourlyDiagram(column, hourlyDiagram)
 }
-
 
 async function drawdiagramdaily(column) {
- 
-	// Requirements: weather and sunrise
-	if (!weatherData) { await setupWeather() }
-	if (!sunData) { await setupSunrise() }
-  
-	//define stack in which canvas will be drawn
-	let diagramStack = column.addStack()
-	diagramStack.layoutHorizontally()
-	diagramStack.setPadding(0, 0, 0, 0)
-	diagramStack.borderWidth = 0
-	// DRAW THE GRAPH
-	let min, max, diff;
-	for(let i = 0; i<=daysToShow ;i++){
-		let temp = shouldRound(roundedGraph, weatherData.daily[i].temp.max);
-		min = (temp < min || min == undefined ? temp : min)
-		max = (temp > max || max == undefined ? temp : max)
-	}
-	
-	for(let i = 0; i<=daysToShow ;i++){
-		let temp = shouldRound(roundedGraph, weatherData.daily[i].temp.min);
-		min = (temp < min || min == undefined ? temp : min)
-		max = (temp > max || max == undefined ? temp : max)
-	}
-
-	let fromLeft = 50
-	let heightDiff = 80
-	diff = max - min
-	let weekday = new Array(7);
-  weekday[0] = "Su";
-  weekday[1] = "Mo";
-  weekday[2] = "Tu";
-  weekday[3] = "We";
-  weekday[4] = "Th";
-  weekday[5] = "Fr";
-  weekday[6] = "Sa";
-
-	for(let i = 0; i<=daysToShow ;i++){
-		let temp = shouldRound(roundedGraph, weatherData.daily[i].temp.max);
-	  let nextHourTemp = shouldRound(roundedGraph, weatherData.daily[i+1].temp.max);
-		let hour = epochToDate(weatherData.daily[i].dt).getDay();
-		let delta = (diff>0)?(shouldRound(roundedGraph, temp) - min) / diff:0.5;
-		let nextDelta = (diff>0)?(nextHourTemp - min) / diff:0.5
-    if(i < daysToShow){
-			let dayData = epochToDate(weatherData.daily[i].dt);
-    }
-		
-    if (i<(daysToShow)) {
-      drawLine(spaceBetweenDays * (i) + fromLeft, 176 - (heightDiff * delta),spaceBetweenDays * (i+1) + fromLeft , 176 - (heightDiff * nextDelta), 4, (shadow1))
-      drawLine(spaceBetweenDays * (i) + fromLeft, 177 - (heightDiff * delta),spaceBetweenDays * (i+1) + fromLeft , 177 - (heightDiff * nextDelta), 4, (shadow2))
-			drawLine(spaceBetweenDays * (i) + fromLeft, 175 - (heightDiff * delta),spaceBetweenDays * (i+1) + fromLeft , 175 - (heightDiff * nextDelta), 4, (accentColor))
-    }
-    
-		drawLine(spaceBetweenDays * (i) + fromLeft+2, 215 ,spaceBetweenDays * (i) + fromLeft + 2, 215 - (heightDiff * delta)-40, 2, linecolor)
-  	// Next 2 lines SFSymbols tweak 
-		const condition = i==0?weatherData.current.weather[0].id:weatherData.daily[i].weather[0].id
-   
-		let conditionDigitvol= Math.floor(condition / 100)
-		drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenDays*i+33, 131 - (heightDiff*delta), 50, 21, shadow1)
-  	drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenDays*i+34, 132 - (heightDiff*delta), 50, 21, shadow2)
-  	drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenDays*i+35, 133 - (heightDiff*delta), 50, 21, shadow3)
-
-		if ((conditionDigitvol===2) || ( conditionDigitvol===3) || (conditionDigitvol===5)){
-	    	drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenDays*i+32, 130 - (heightDiff*delta), 50, 21, rainColor)
-		} else if (conditionDigitvol===6) {
-			drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenDays*i+32, 130 - (heightDiff*delta), 50, 21, Color.white())
-		} else {
-			drawTextC(shouldRound(roundedTemp, temp)+"°", 20, spaceBetweenDays*i+32, 130 - (heightDiff*delta), 50, 21, accentColor)
-		}
-	  night=false
-		drawImage(symbolForCondition(condition), spaceBetweenDays * i + 33, 155 - (heightDiff*delta)); //40, 165
-   	drawTextC((i==0?"Today":weekday[hour]), 18, spaceBetweenDays*i+26, 221,55, 21, shadow1)
-		drawTextC((i==0?"Today":weekday[hour]), 18, spaceBetweenDays*i+27, 222,55, 21, shadow2)
-		drawTextC((i==0?"Today":weekday[hour]), 18, spaceBetweenDays*i+28, 223,55, 21, shadow3)
-  	drawTextC((i==0?"Today":weekday[hour]), 18, spaceBetweenDays*i+25, 220,55, 21, Color.white())
-  	previousDelta = delta;
-	}
-	
-	for(let i = 0; i<daysToShow ;i++){
-		let tempmin = shouldRound(roundedGraph, weatherData.daily[i].temp.min);
-		let nextHourTempmin = shouldRound(roundedGraph, weatherData.daily[i+1].temp.min);
-		let deltamin = (diff>0)?(shouldRound(roundedGraph, tempmin) - min) / diff:0.5;
-		let nextDeltamin = (diff>0)?(nextHourTempmin - min) / diff:0.5
-  	if (i<(daysToShow-1)) {
-     	drawLine(spaceBetweenDays * (i) + fromLeft + spaceBetweenDays/2, 176 - (heightDiff * deltamin),spaceBetweenDays * (i+1) + fromLeft + spaceBetweenDays/2, 176 - (heightDiff * nextDeltamin), 4, (shadow1))
-     	drawLine(spaceBetweenDays * (i) + fromLeft + spaceBetweenDays/2, 177 - (heightDiff * deltamin),spaceBetweenDays * (i+1) + fromLeft + spaceBetweenDays/2, 177 - (heightDiff * nextDeltamin), 4, (shadow2))
-		  drawLine(spaceBetweenDays * (i) + fromLeft + spaceBetweenDays/2, 175 - (heightDiff * deltamin),spaceBetweenDays * (i+1) + fromLeft + spaceBetweenDays/2, 175 - (heightDiff * nextDeltamin), 4, (nightColor))
-	  }
-    // Next 2 lines SFSymbols tweak 
-		const condition = i==0?weatherData.current.weather[0].id:weatherData.daily[i].weather[0].id
-    
-    let conditionDigitvol= Math.floor(condition / 100)
-    drawTextC(shouldRound(roundedTemp, tempmin)+"°", 20, spaceBetweenDays*i+33 + spaceBetweenDays/2, 196 - (heightDiff*deltamin), 50, 21, shadow1)
-    drawTextC(shouldRound(roundedTemp, tempmin)+"°", 20, spaceBetweenDays*i+34 + spaceBetweenDays/2, 197 - (heightDiff*deltamin), 50, 21, shadow2)
-    drawTextC(shouldRound(roundedTemp, tempmin)+"°", 20, spaceBetweenDays*i+35 + spaceBetweenDays/2, 198 - (heightDiff*deltamin), 50, 21, shadow3)
-    if ((conditionDigitvol===2) || ( conditionDigitvol===3) || (conditionDigitvol===5)){  
-	    drawTextC(shouldRound(roundedTemp, tempmin)+"°", 20, spaceBetweenDays*i+32 + spaceBetweenDays/2, 195 - (heightDiff*deltamin), 50, 21, rainColor)
-    } else if (conditionDigitvol===6) {
-		  drawTextC(shouldRound(roundedTemp, tempmin)+"°", 20, spaceBetweenDays*i+32 + spaceBetweenDays/2, 195 - (heightDiff*deltamin), 50, 21, Color.white())
-		} else {
-	    drawTextC(shouldRound(roundedTemp, tempmin)+"°", 20, spaceBetweenDays*i+32 + spaceBetweenDays/2, 195 - (heightDiff*deltamin), 50, 21, linecolor)
-    }
-   
-		night=true
-		drawImage(symbolForCondition(condition), spaceBetweenDays * i + 33 + spaceBetweenDays/2, 155 - (heightDiff*deltamin)); //40, 165
-   	previousDeltamin = deltamin;
-	}
-		// endo of for-loop
-	drawLine(0,255,665,255, 1, linecolor)
-	diagramStack.addImage(drawContext.getImage());
-	
-	
+  await ensureWeatherAndSolarData()
+  const dailyDiagram = buildDailyDiagramModel()
+  renderDailyDiagram(column, dailyDiagram)
 }
 
-// display location ONLY on screen - thewaytozionmod
+// Current location name.
 async function currentLoc(column) {
-	// Requirements: location
-  if (!locationData) { await setupLocation() }
-  	
-  // Set up the current weather stack.
-  let currentLocStack = align(column)
-  currentLocStack.layoutHorizontally()
-  currentLocStack.setPadding(0, 0, 0, 0)
-  currentLocStack.url = "https://weather.com/weather/today/l/" + locationData.latitude + "," + locationData.longitude
-  let locationonlyTextStack = align(currentLocStack)
-  locationonlyTextStack.layoutHorizontally()
-  //symbolName = "mappin.and.ellipse"
-  //const symbol = locationonlyTextStack.addImage(SFSymbol.named(symbolName).image)
-  //symbol.imageSize = new Size(22,22)
-  //tintIcon(symbol, textFormat.location)
-  //locationonlyTextStack.addSpacer(padding)
-  let locationonlyText = provideText(locationData.locality, locationonlyTextStack, textFormat.location)
+  return renderTextItem(column, {
+    ensure: ensureLocationData,
+    text: () => locationData.locality,
+    format: textFormat.location,
+    paddingValues: [0, 0, 0, 0],
+    layoutHorizontally: true,
+    applyWeatherUrl: true,
+  })
 }
 
-// Display the current weather.
+// Current weather condition description (e.g. "Broken clouds").
 async function desconly(column) {
-
-   // Requirements: weather and sunrise
-  if (!weatherData) { await setupWeather() }
-  if (!sunData) { await setupSunrise() }
-  // Set up the current weather stack.
-  let currentdescStack = align(column)
-  currentdescStack.setPadding(0, 0, 0, 0)
-  currentdescStack.url = "https://weather.com/weather/today/l/" + locationData.latitude + "," + locationData.longitude
-  // Show the current temperature.
-
-  const descaloneStack = align(currentdescStack)
-  descaloneStack.setPadding(0, 0, 0, 0)
-  const descaloneText = weatherData.current.weather[0].description
-  const descalone = provideText(descaloneText, descaloneStack, textFormat.desconly)
+  return renderTextItem(column, {
+    ensure: ensureWeatherAndSolarData,
+    text: () => {
+      const currentCondition = weatherData.current.weather[0]
+      return getLocalizedConditionDescription(currentCondition.id, currentCondition.description)
+    },
+    format: textFormat.desconly,
+    paddingValues: [0, 0, 0, 0],
+    applyWeatherUrl: true,
+  })
 }
 
-
-
-
-
-// Display the current weather.
-
+// Today's high temperature.
 async function maxtemp(column) {
-
-   // Requirements: weather and sunrise
-  if (!weatherData) { await setupWeather() }
-  
-  // Set up the current weather stack.
-  let maxtempStack = align(column)
-  maxtempStack.setPadding(padding, 0, 0, 0)
-  maxtempStack.url = "https://weather.com/weather/today/l/" + locationData.latitude + "," + locationData.longitude
-
-  let maxtempText = ""
-	maxtempText = "Max: " + Math.round(weatherData.daily[0].temp.max).toString()+"°"
-  const maxtemp = provideText(maxtempText, maxtempStack, textFormat.HiLotemp)
+  return renderTextItem(column, {
+    ensure: ensureWeatherData,
+    text: () => t("labels.max") + " " + Math.round(weatherData.daily[0].temp.max).toString() + "°",
+    format: textFormat.HiLotemp,
+    applyWeatherUrl: true,
+  })
 }
 
-// Display the current weather.
-
+// Today's low temperature.
 async function mintemp(column) {
-
-   // Requirements: weather and sunrise
-  if (!weatherData) { await setupWeather() }
-  
-  // Set up the current weather stack.
-  let mintempStack = align(column)
-  mintempStack.setPadding(padding, 0, 0, 0)
-  mintempStack.url = "https://weather.com/weather/today/l/" + locationData.latitude + "," + locationData.longitude
-
-  let mintempText = ""
-  mintempText ="Min: " + Math.round(weatherData.daily[0].temp.min).toString()+"°"
-  const mintemp = provideText(mintempText, mintempStack, textFormat.HiLotemp)
+  return renderTextItem(column, {
+    ensure: ensureWeatherData,
+    text: () => t("labels.min") + " " + Math.round(weatherData.daily[0].temp.min).toString() + "°",
+    format: textFormat.HiLotemp,
+    applyWeatherUrl: true,
+  })
 }
 
-
-
-// Display the current weather.
-
+// Time of today's sunset.
 async function sunsetonly(column) {
-  // Requirements: sunrise
-  if (!sunData) { await setupSunrise() }
-  
-  const sunset = sunData.sunset
-  
-  
-  const sunsetonlyStack = align(column)
-  sunsetonlyStack.setPadding(padding, 0, 0, 0)
-  sunsetonlyStack.borderWidth = 0
-  //sunsetonlyStack.size = new Size(55, 0);
-  // Add the time.
-  let date = new Date(sunset)
-  let sunsetonlyText
-  if (_12Hours) {
-	let df = new DateFormatter()
-	df.locale = "en"
-	df.useNoDateStyle()
-	df.useShortTimeStyle()
-	sunsetonlyText = df.string(date)
-  } else {
-    sunsetonlyText = date.getHours() + ":" + date.getMinutes()
-  }
-  const sunsetonly = provideText(sunsetonlyText, sunsetonlyStack, textFormat.databtm)
-
-
+  return renderTextItem(column, {
+    ensure: ensureSolarData,
+    text: () => formatWidgetTime(new Date(solarData.sunset)),
+    format: textFormat.databtm,
+    borderWidth: 0,
+  })
 }
 
-
-// Display the current weather.
-
+// Time of today's sunrise.
 async function sunriseonly(column) {
-
-
-  // Requirements: sunrise
-  if (!sunData) { await setupSunrise() }
-  
-  const sunrise = sunData.sunrise
-  console.log(sunrise)
-  
-  const sunriseonlyStack = align(column)
-  sunriseonlyStack.setPadding(padding, 0, 0, 00)
-  //sunriseonlyStack.size = new Size(55, 0);
-  // Add the time.
-  let date = new Date(sunrise)
-  let sunriseonlyText
-  if (_12Hours) {
-	let df = new DateFormatter()
-	df.locale = "en"
-	df.useNoDateStyle()
-	df.useShortTimeStyle()
-	sunriseonlyText = df.string(date)
-  } else {
-    sunriseonlyText = date.getHours() + ":" + date.getMinutes()
-  }
-  const sunriseonly = provideText(sunriseonlyText, sunriseonlyStack, textFormat.databtm)
+  return renderTextItem(column, {
+    ensure: ensureSolarData,
+    text: () => formatWidgetTime(new Date(solarData.sunrise)),
+    format: textFormat.databtm,
+  })
 }
 
-// Display the current weather. 
-
+// "Feels like" apparent temperature.
 async function feelslike(column) {
-
-   // Requirements: weather and sunrise
-  if (!weatherData) { await setupWeather() }
-  	
-  
-  // Set up the current weather stack.
-  let feelslikeStack = align(column)
-  feelslikeStack.setPadding(padding, 0, 0, 0)
-
-  feelslikeStack.borderWidth = 0
-//   feelslikeStack.size = new Size(55, 0);
-  
-  const feelslikeText = Math.round(weatherData.current.feels_like).toString() +"°"
-
-  const feelslike = provideText(feelslikeText, feelslikeStack, textFormat.databtm)
-  feelslike.rightAlignText()
+  return renderTextItem(column, {
+    ensure: ensureWeatherData,
+    text: () => Math.round(weatherData.current.feels_like).toString() + "°",
+    format: textFormat.databtm,
+    borderWidth: 0,
+    rightAlign: true,
+  })
 }
 
-// Display the current weather.
-
+// Precipitation probability for the current hour (0–100 %).
 async function rain(column) {
-
-   // Requirements: weather and sunrise
-  if (!weatherData) { await setupWeather() }
- 
-  // Set up the current weather stack.
-  let rainStack = align(column)
-  rainStack.setPadding(padding, 0, 0, 0)
-//   rainStack.size = new Size(55, 0);
-
-  const rainText = Math.round(100*weatherData.hourly[0].pop).toString() +"%"
-  const rain = provideText(rainText, rainStack, textFormat.databtm)
-rain.rightAlignText()
+  return renderTextItem(column, {
+    ensure: ensureWeatherData,
+    text: () => Math.round(100 * weatherData.hourly[0].pop).toString() + "%",
+    format: textFormat.databtm,
+    rightAlign: true,
+  })
 }
 
-// Display the current weather. 
-
+// Current dew point temperature.
 async function dewpoint(column) {
-
-   // Requirements: weather and sunrise
-  if (!weatherData) { await setupWeather() }
- 
-  // Set up the current weather stack.
-  let dewpointStack = align(column)
-  dewpointStack.setPadding(padding, 0, 0, 0)
-// dewpointStack.size = new Size(55, 0);
-
-  const dewpointText = Math.round(weatherData.current.dew_point).toString() +"°"
- const dewpoint = provideText(dewpointText, dewpointStack, textFormat.databtm)
- dewpoint.rightAlignText()
+  return renderTextItem(column, {
+    ensure: ensureWeatherData,
+    text: () => Math.round(weatherData.current.dew_point).toString() + "°",
+    format: textFormat.databtm,
+    rightAlign: true,
+  })
 }
 
-// Display the current weather. 
-
+// Current relative humidity.
 async function humidity(column) {
-
-   // Requirements: weather and sunrise
-  if (!weatherData) { await setupWeather() }
- 
-  // Set up the current weather stack.
-  let humidityStack = align(column)
-  humidityStack.setPadding(padding, 0, 0, 0)
-//   humidityStack.size = new Size(65, 0);
-
-  const humidityText = Math.round(weatherData.current.humidity).toString() +"%"
-  const humidity = provideText(humidityText, humidityStack, textFormat.databtm)
- humidity.rightAlignText()
+  return renderTextItem(column, {
+    ensure: ensureWeatherData,
+    text: () => Math.round(weatherData.current.humidity).toString() + "%",
+    format: textFormat.databtm,
+    rightAlign: true,
+  })
 }
-// Display the current weather. 
 
+// Current atmospheric pressure (hPa or inHg depending on units setting).
 async function pressure(column) {
-
-   // Requirements: weather and sunrise
-  if (!weatherData) { await setupWeather() }
-
-  let unit = " hPa";
-  let currPressure = weatherData.current.pressure;
-  if (weatherSettings.units === "imperial") {
-    currPressure = (currPressure/33.8638).toFixed(2);
-    unit = " inHg";
-  } else {
-    currPressure = Math.round(currPressure);
-  }
- 
-  // Set up the current weather stack.
-  let pressureStack = align(column)
-  pressureStack.setPadding(padding, 0, 0, 0)
-//   pressureStack.size = new Size(85, 0);
- const pressureText = currPressure.toString() + unit;
- const pressure = provideText(pressureText, pressureStack, textFormat.databtm)
- pressure.rightAlignText()
+  return renderTextItem(column, {
+    ensure: ensureWeatherData,
+    text: () => formatPressureValue(),
+    format: textFormat.databtm,
+    rightAlign: true,
+  })
 }
 
-// Display the current weather.
-
+// Current wind speed and compass direction.
 async function wind(column) {
-
-   // Requirements: weather and sunrise
-  if (!weatherData) { await setupWeather() }
- 
-  let winddir =""
-  let direction = weatherData.current.wind_deg
-console.log("direction " + direction)
-  if (direction <= 360) winddir = "N";
-  if (direction < 348.75) winddir = "NNW";    
-  if (direction < 326.25) winddir = "NW";   
-  if (direction < 303.75) winddir = "WNW";
-  if (direction < 281.25) winddir = "W";    
-  if (direction < 258.75) winddir = "WSW";    
-  if (direction < 236.25) winddir = "SW";
-  if (direction < 213.75) winddir = "SSW";    
-  if (direction < 191.25) winddir = "S";    
-  if (direction < 168.75) winddir = "SSO";
-  if (direction < 146.25) winddir = "SO";   
-  if (direction < 123.75) winddir = "OSO";    
-  if (direction < 101.25) winddir = "O";    
-  if (direction < 78.75) winddir = "ONO";   
-  if (direction < 56.25) winddir = "NO";
-  if (direction < 33.75) winddir = "NNO";   
-  if (direction < 11.25) winddir = "N";
-
-  let unit = " m/s ";
-  if (weatherSettings.units === "imperial") unit = " mph ";
-
-  // Set up the current weather stack.
-  let windStack = align(column)
-  windStack.setPadding(padding, 0, 0, 0)
-  const windText = Math.round(weatherData.current.wind_speed).toString() + unit + winddir
-// const windText = Math.round(weatherData.current.wind_speed).toString() +" m/s "
-  const wind = provideText(windText, windStack, textFormat.databtm)
- 
-
+  return renderTextItem(column, {
+    ensure: ensureWeatherData,
+    text: () => formatWindValue(),
+    format: textFormat.databtm,
+  })
 }
 
-
-// Display the current weather.
-
+// Current UV Index value.
 async function UVIndex(column) {
-
-   // Requirements: weather and sunrise
-  if (!weatherData) { await setupWeather() }
- 
-  // Set up the current weather stack.
-  let UVIndexStack = align(column)
-  UVIndexStack.setPadding(padding, 0, 0, 0)
-//   UVIndexStack.size = new Size(55, 0);
-  const UVIndexText = (weatherData.current.uvi).toString()
- const UVIndex = provideText(UVIndexText, UVIndexStack, textFormat.databtm)
-
+  return renderTextItem(column, {
+    ensure: ensureWeatherData,
+    text: () => weatherData.current.uvi.toString(),
+    format: textFormat.databtm,
+  })
 }
-// Display the current weather.
 
+// Current cloud coverage percentage.
 async function clouds(column) {
-
-   // Requirements: weather and sunrise
-  if (!weatherData) { await setupWeather() }
- 
-  // Set up the current weather stack.
-  let cloudsStack = align(column)
-  cloudsStack.setPadding(padding, 0, 0, 0)
-//   cloudsStack.size = new Size(55, 0);
-  const cloudsText = Math.round(weatherData.current.clouds).toString() +"%"
-  const clouds = provideText(cloudsText, cloudsStack, textFormat.databtm)
- 
+  return renderTextItem(column, {
+    ensure: ensureWeatherData,
+    text: () => Math.round(weatherData.current.clouds).toString() + "%",
+    format: textFormat.databtm,
+  })
 }
 
-// get time to show updated time
+// Timestamp of the last weather data refresh.
 async function updatedtime(column) {
-  // Requirements: weather and sunrise
-  if (!weatherData) { await setupWeather() }
- 
-  // Show the current time.
-  const updatedStack = align(column)
-  updatedStack.setPadding(0, padding, 0, 0)
-  
-  //console.log("update " +weatherData.update)
-
-  const updatedText = ("Update:" + weatherData.update)
-
-
-//    const updatedText = formatTime(new Date(weatherData.update))
-const updatevar = provideText(updatedText, updatedStack, textFormat.updatetxt)
-
-  //const updatevar = provideText(updatedText, updatedStack, textFormat.updated)
-
+  return renderTextItem(column, {
+    ensure: ensureWeatherData,
+    text: () => t("labels.update") + weatherData.update,
+    format: textFormat.updatetxt,
+    paddingValues: [0, padding, 0, 0],
+  })
 }
 
 async function alerts(column) {
   if (showAlerts) {
-    // Requirements: weather and sunrise
-    if (!weatherData) { await setupWeather() }
+    await ensureWeatherData()
 
-    // Show the alerts.
-    const alertStack = align(column);
-    alertStack.setPadding(0, 0, 0, padding);
+    const alertStack = align(column)
+    alertStack.setPadding(0, 0, 0, padding)
 
     if (weatherData.alerts && weatherData.alerts.length > 0) {
-      let alertText = "⚠️" + weatherData.alerts[0].event;
+      let alertText = "⚠️" + weatherData.alerts[0].event
 
       if (weatherData.alerts.length > 1) {
-        alertText = alertText + " & " + (weatherData.alerts.length - 1) + " more alert";
-        if (weatherData.alerts.length > 2) alertText = alertText + "s";
+        const additionalAlertCount = weatherData.alerts.length - 1
+        alertText =
+          alertText +
+          " & " +
+          additionalAlertCount +
+          " " +
+          formatAdditionalAlertText(additionalAlertCount)
       }
 
-      const alert = provideText(alertText, alertStack, textFormat.alertstxt);
+      const alert = provideText(alertText, alertStack, textFormat.alertstxt)
     }
   }
 }
 
-
-// Display the current weather. 
-
+// "Sunset" label.
 async function sunsetonlytxt(column) {
-  // Requirements: sunrise
-  
-  const sunsetonlyStack = align(column)
-  sunsetonlyStack.setPadding(padding, 0, 0, 0)
-
-  sunsetonlyStack.borderWidth = 0
-  // Add the time.
-  const sunsetonlyText = "Sunset"
-  const sunsetonly = provideText(sunsetonlyText, sunsetonlyStack, textFormat.databtmtxt)
-
-
+  return renderInfoLabel(column, "labels.sunset", { borderWidth: 0 })
 }
 
-
-// Display the current weather. 
-
+// "Sunrise" label.
 async function sunriseonlytxt(column) {
-
-
- 
-  
-  const sunriseonlyStack = align(column)
-  sunriseonlyStack.setPadding(padding, 0, 0, 0)
-  // Add the time.
-  const sunriseonlyText = "Sunrise"
-  const sunriseonly = provideText(sunriseonlyText, sunriseonlyStack, textFormat.databtmtxt)
+  return renderInfoLabel(column, "labels.sunrise")
 }
 
-// Display the current weather. 
-
+// "Feels like" label.
 async function feelsliketxt(column) {
-
-  
-  
-  // Set up the current weather stack.
-  let feelslikeStack = align(column)
-  feelslikeStack.setPadding(padding, 0, 0, 0)
-  feelslikeStack.borderWidth = 0
-  const feelslikeText = "Feels Like"
-  const feelslike = provideText(feelslikeText, feelslikeStack, textFormat.databtmtxt)
-
+  return renderInfoLabel(column, "labels.feelsLike", { borderWidth: 0 })
 }
 
-// Display the current weather. 
-
+// "Rain" label.
 async function raintxt(column) {
-
-   
-  // Set up the current weather stack.
-  let rainStack = align(column)
-  rainStack.setPadding(padding, 0, 0, 0)
-  const rainText = "Rain"
-  const rain = provideText(rainText, rainStack, textFormat.databtmtxt)
-
+  return renderInfoLabel(column, "labels.rain")
 }
 
-// Display the current weather. 
-
+// "Dew point" label.
 async function dewpointtxt(column) {
-
-   
-  // Set up the current weather stack.
-  let dewpointStack = align(column)
-  dewpointStack.setPadding(padding, 0, 0, 0)
-  const dewpointText = "Dew Point"
- const dewpoint = provideText(dewpointText, dewpointStack, textFormat.databtmtxt)
+  return renderInfoLabel(column, "labels.dewPoint")
 }
 
-// Display the current weather. 
-
+// "Humidity" label.
 async function humiditytxt(column) {
-
-   
- 
-  // Set up the current weather stack.
-  let humidityStack = align(column)
-  humidityStack.setPadding(padding, 0, 0, 0)
-  const humidityText = "Humidity"
-  const humidity = provideText(humidityText, humidityStack, textFormat.databtmtxt)
-
+  return renderInfoLabel(column, "labels.humidity")
 }
-// Display the current weather. 
 
+// "Pressure" label.
 async function pressuretxt(column) {
-
-   
- 
-  // Set up the current weather stack.
-  let pressureStack = align(column)
-  pressureStack.setPadding(padding, 0, 0, 0)
-  const pressureText = "Pressure"
- const pressure = provideText(pressureText, pressureStack, textFormat.databtmtxt)
-
+  return renderInfoLabel(column, "labels.pressure")
 }
 
-// Display the current weather. 
-
+// "Wind" label.
 async function windtxt(column) {
-
- 
-  
-  let windStack = align(column)
-  windStack.setPadding(padding, 0, 0, 0)
-  const windText = "Wind"
-  const wind = provideText(windText, windStack, textFormat.databtmtxt)
-
-
+  return renderInfoLabel(column, "labels.wind")
 }
 
-// Display the current weather. 
-
+// "UV Index" label.
 async function UVIndextxt(column) {
-
-   
-  // Set up the current weather stack.
-  let UVIndexStack = align(column)
-  UVIndexStack.setPadding(padding, 0, 0, 0)
-  const UVIndexText = "UV-Index"
- const UVIndex = provideText(UVIndexText, UVIndexStack, textFormat.databtmtxt)
-
+  return renderInfoLabel(column, "labels.uvIndex")
 }
-// Display the current weather. 
 
+// "Clouds" label.
 async function cloudstxt(column) {
-
-  
- 
-  // Set up the current weather stack.
-  let cloudsStack = align(column)
-  cloudsStack.setPadding(padding, 0, 0, 0)
-  const cloudsText = "Cloud"
-  const clouds = provideText(cloudsText, cloudsStack, textFormat.databtmtxt)
-
+  return renderInfoLabel(column, "labels.clouds")
 }
 
 // Show the sunrise or sunset time.
 async function sunrise(column) {
-  
   // Requirements: sunrise
-  if (!sunData) { await setupSunrise() }
-  
-  const sunrise = sunData.sunrise
-  const sunset = sunData.sunset
-  const tomorrow = sunData.tomorrow
+  await ensureSolarData()
+
+  const sunrise = solarData.sunrise
+  const sunset = solarData.sunset
+  const tomorrow = solarData.tomorrow
   const current = currentDate.getTime()
-  
+
   const showWithin = sunriseSettings.showWithin
   const closeToSunrise = closeTo(sunrise) <= showWithin
   const closeToSunset = closeTo(sunset) <= showWithin
 
   // If we only show sometimes and we're not close, return.
-  if (showWithin > 0 && !closeToSunrise && !closeToSunset) { return }
-  
+  if (showWithin > 0 && !closeToSunrise && !closeToSunset) {
+    return
+  }
+
   // Otherwise, determine which time to show.
   let timeToShow, symbolName
   const halfHour = 30 * 60 * 1000
-  
+
   // If we're between sunrise and sunset, show the sunset.
   if (current > sunrise + halfHour && current < sunset + halfHour) {
     symbolName = "sunset.fill"
     timeToShow = sunset
   }
-  
+
   // Otherwise, show a sunrise.
   else {
     symbolName = "sunrise.fill"
     timeToShow = current > sunset ? tomorrow : sunrise
   }
-  
+
   // Set up the stack.
   const sunriseStack = align(column)
-  sunriseStack.setPadding(padding/2, padding, padding/2, padding)
+  sunriseStack.setPadding(padding / 2, padding, padding / 2, padding)
   sunriseStack.layoutHorizontally()
   sunriseStack.centerAlignContent()
-  
+
   sunriseStack.addSpacer(padding * 0.3)
-  
+
   // Add the correct symbol.
   const symbol = sunriseStack.addImage(SFSymbol.named(symbolName).image)
-  symbol.imageSize = new Size(22,22)
+  symbol.imageSize = new Size(22, 22)
   tintIcon(symbol, textFormat.sunrise)
-  
+
   sunriseStack.addSpacer(padding)
-  
+
   // Add the time.
   const timeText = formatTime(new Date(timeToShow))
   const time = provideText(timeText, sunriseStack, textFormat.sunrise)
@@ -1709,11 +1476,10 @@ async function sunset(column) {
 }
 
 async function offline(column) {
-
   let offline = false
   try {
     await new Request("https://openweathermap.org").load()
-  } catch(e) {
+  } catch (e) {
     offline = true
   }
 
@@ -1723,37 +1489,158 @@ async function offline(column) {
   offlineIndicator.rightAlignText()
 }
 
-
 /*
  * HELPER FUNCTIONS
  * These functions perform duties for other functions.
  * ===================================================
  */
 
-// Determines if the provided date is at night.
+// Returns true when dateInput is before sunrise or after sunset.
+// Also updates the global `night` flag used by symbolForCondition().
 function isNight(dateInput) {
   const timeValue = dateInput.getTime()
-
-// add here
-if (timeValue < sunData.sunrise){
-	night= true
-} else {
-	night=false
-}
-
-  return (timeValue < sunData.sunrise) || (timeValue > sunData.sunset)
-}
-
-// Determines if two dates occur on the same day
-function sameDay(d1, d2) {
-  return d1.getFullYear() === d2.getFullYear() &&
-    d1.getMonth() === d2.getMonth() &&
-    d1.getDate() === d2.getDate()
+  night = timeValue < solarData.sunrise || timeValue > solarData.sunset
+  return night
 }
 
 // Returns the number of minutes between now and the provided date.
 function closeTo(time) {
   return Math.abs(currentDate.getTime() - time) / 60000
+}
+
+function getWeatherPageUrl() {
+  return (
+    "https://weather.com/weather/today/l/" + locationData.latitude + "," + locationData.longitude
+  )
+}
+
+function applyWeatherPageUrl(target) {
+  target.url = getWeatherPageUrl()
+}
+
+function createItemStack(column, options = {}) {
+  const stack = align(column)
+  const paddingValues = options.paddingValues || [padding, 0, 0, 0]
+
+  stack.setPadding(...paddingValues)
+
+  if (options.layoutHorizontally) {
+    stack.layoutHorizontally()
+  }
+
+  if (options.centerAlignContent) {
+    stack.centerAlignContent()
+  }
+
+  if (options.applyWeatherUrl) {
+    applyWeatherPageUrl(stack)
+  }
+
+  if (options.borderWidth != null) {
+    stack.borderWidth = options.borderWidth
+  }
+
+  return stack
+}
+
+async function renderTextItem(column, options) {
+  if (options.ensure) {
+    await options.ensure()
+  }
+
+  const stack = createItemStack(column, options)
+  const textValue = typeof options.text === "function" ? options.text() : options.text
+  const textItem = provideText(textValue, stack, options.format)
+
+  if (options.rightAlign || currentAlignment === alignRight) {
+    textItem.rightAlignText()
+  } else if (currentAlignment === alignCenter) {
+    textItem.centerAlignText()
+  }
+
+  return textItem
+}
+
+async function renderInfoLabel(column, textKey, options = {}) {
+  return renderTextItem(column, {
+    text: () => t(textKey),
+    format: textFormat.databtmtxt,
+    ...options,
+  })
+}
+
+function getLanguageCode(localeValue) {
+  const normalizedLocale = (localeValue || "en").toLowerCase()
+
+  if (normalizedLocale.startsWith("de")) {
+    return "de"
+  }
+
+  return "en"
+}
+
+function getTranslationValue(dictionary, path) {
+  return path.split(".").reduce((value, key) => (value ? value[key] : undefined), dictionary)
+}
+
+function t(path) {
+  return getTranslationValue(strings, path) ?? getTranslationValue(i18n.en, path) ?? path
+}
+
+function getConditionDescriptionKey(condition) {
+  if (condition === 800) return "clearSky"
+  if (condition === 801) return "fewClouds"
+  if (condition === 802) return "scatteredClouds"
+  if (condition === 803) return "brokenClouds"
+  if (condition === 804) return "overcastClouds"
+  if (condition === 511) return "freezingRain"
+
+  if ([611, 612, 613, 615, 616].includes(condition)) {
+    return "sleet"
+  }
+
+  if (condition === 701) return "mist"
+  if (condition === 711) return "smoke"
+  if (condition === 721) return "haze"
+  if (condition === 741) return "fog"
+  if ([731, 751, 761].includes(condition)) return "dust"
+  if (condition === 762) return "ash"
+  if (condition === 771) return "squalls"
+  if (condition === 781) return "tornado"
+
+  switch (Math.floor(condition / 100)) {
+    case 2:
+      return "thunderstorm"
+    case 3:
+      return "drizzle"
+    case 5:
+      return "rain"
+    case 6:
+      return "snow"
+    case 7:
+      return "atmosphere"
+    case 8:
+      return "cloudy"
+    default:
+      return null
+  }
+}
+
+function getLocalizedConditionDescription(condition, fallbackDescription = "") {
+  const key = getConditionDescriptionKey(condition)
+
+  if (!key) {
+    return fallbackDescription
+  }
+
+  const translationPath = "conditions." + key
+  const translation = t(translationPath)
+
+  return translation === translationPath ? fallbackDescription : translation
+}
+
+function formatAdditionalAlertText(count) {
+  return count === 1 ? t("alerts.additionalOne") : t("alerts.additionalMany")
 }
 
 // Format the time for a Date input.
@@ -1765,90 +1652,399 @@ function formatTime(date) {
   return df.string(date)
 }
 
-// Provide a text symbol with the specified shape.
-function provideTextSymbol(shape) {
+function formatWidgetTime(date) {
+  if (_12Hours) {
+    let df = new DateFormatter()
+    df.locale = "en"
+    df.useNoDateStyle()
+    df.useShortTimeStyle()
+    return df.string(date)
+  }
 
-  // Rectangle character.
-  if (shape.startsWith("rect")) {
-    return "\u2759"
-  }
-  // Circle character.
-  if (shape == "circle") {
-    return "\u2B24"
-  }
-  // Default to the rectangle.
-  return "\u2759" 
+  // Zero-pad minutes so e.g. 9:05 is shown correctly instead of "9:5".
+  const mm = String(date.getMinutes()).padStart(2, "0")
+  return date.getHours() + ":" + mm
 }
 
-// Provide a symbol based on the condition.
-function provideConditionSymbol(cond,night) {
-  
-  // Define our symbol equivalencies.
-  let symbols = {
-  
-    // Thunderstorm
-    "2": function() { return "cloud.bolt.rain.fill" },
-    
-    // Drizzle
-    "3": function() { return "cloud.drizzle.fill" },
-    
-    // Rain
-    "5": function() { return (cond == 511) ? "cloud.sleet.fill" : "cloud.rain.fill" },
-    
-    // Snow
-    "6": function() { return (cond >= 611 && cond <= 613) ? "cloud.snow.fill" : "snow" },
-    
-    // Atmosphere
-    "7": function() {
-      if (cond == 781) { return "tornado" }
-      if (cond == 701 || cond == 741) { return "cloud.fog.fill" }
-      return night ? "cloud.fog.fill" : "sun.haze.fill"
-    },
-    
-    // Clear and clouds
-    "8": function() {
-      if (cond == 800 || cond == 801) { return night ? "moon.stars.fill" : "sun.max.fill" }
-      if (cond == 802 || cond == 803) { return night ? "cloud.moon.fill" : "cloud.sun.fill" }
-      return "cloud.fill"
-    }
+function formatPressureValue() {
+  let unit = " hPa"
+  let currentPressure = weatherData.current.pressure
+
+  if (weatherSettings.units === "imperial") {
+    currentPressure = (currentPressure / 33.8638).toFixed(2)
+    unit = " inHg"
+  } else {
+    currentPressure = Math.round(currentPressure)
   }
-  
-  // Find out the first digit.
-  let conditionDigit = Math.floor(cond / 100)
-  
-  // Get the symbol.
-  return SFSymbol.named(symbols[conditionDigit]()).image
+
+  return currentPressure.toString() + unit
+}
+
+function formatWindValue() {
+  const windDirection = getWindDirection(weatherData.current.wind_deg)
+  const unit = weatherSettings.units === "imperial" ? " mph " : " m/s "
+  return Math.round(weatherData.current.wind_speed).toString() + unit + windDirection
+}
+
+function getWindDirection(degrees) {
+  const directions = strings.windDirections
+  const normalizedDegrees = ((degrees % 360) + 360) % 360
+  const directionIndex = Math.round(normalizedDegrees / 22.5) % directions.length
+  return directions[directionIndex]
 }
 
 // Provide a font based on the input.
 function provideFont(fontName, fontSize) {
   const fontGenerator = {
-    "ultralight": function() { return Font.ultraLightSystemFont(fontSize) },
-    "light": function() { return Font.lightSystemFont(fontSize) },
-    "regular": function() { return Font.regularSystemFont(fontSize) },
-    "medium": function() { return Font.mediumSystemFont(fontSize) },
-    "semibold": function() { return Font.semiboldSystemFont(fontSize) },
-    "bold": function() { return Font.boldSystemFont(fontSize) },
-    "heavy": function() { return Font.heavySystemFont(fontSize) },
-    "black": function() { return Font.blackSystemFont(fontSize) },
-    "italic": function() { return Font.italicSystemFont(fontSize) }
+    ultralight: function () {
+      return Font.ultraLightSystemFont(fontSize)
+    },
+    light: function () {
+      return Font.lightSystemFont(fontSize)
+    },
+    regular: function () {
+      return Font.regularSystemFont(fontSize)
+    },
+    medium: function () {
+      return Font.mediumSystemFont(fontSize)
+    },
+    semibold: function () {
+      return Font.semiboldSystemFont(fontSize)
+    },
+    bold: function () {
+      return Font.boldSystemFont(fontSize)
+    },
+    heavy: function () {
+      return Font.heavySystemFont(fontSize)
+    },
+    black: function () {
+      return Font.blackSystemFont(fontSize)
+    },
+    italic: function () {
+      return Font.italicSystemFont(fontSize)
+    },
   }
-  
+
   const systemFont = fontGenerator[fontName]
-  if (systemFont) { return systemFont() }
+  if (systemFont) {
+    return systemFont()
+  }
   return new Font(fontName, fontSize)
 }
- 
+
 // Add formatted text to a container.
 function provideText(string, container, format) {
   const textItem = container.addText(string)
   const textFont = format.font || textFormat.defaultText.font
   const textSize = format.size || textFormat.defaultText.size
   const textColor = format.color || textFormat.defaultText.color
-  
+
   textItem.font = provideFont(textFont, textSize)
   textItem.textColor = new Color(textColor, format.opacity ?? 1)
   return textItem
+}
+
+function tintIcon(icon, format) {
+  const tintColor = format.color || textFormat.defaultText.color
+  icon.tintColor = new Color(tintColor, format.opacity ?? 1)
+}
+
+function getDiagramStep(segmentCount) {
+  if (segmentCount <= 0) {
+    return 0
+  }
+
+  return (diagramSettings.canvas.width - diagramSettings.shared.fromLeft * 2) / segmentCount
+}
+
+function getAvailableSegmentCount(requestedSegments, dataPoints) {
+  return Math.max(0, Math.min(requestedSegments, dataPoints - 2))
+}
+
+function buildHourlyDiagramModel() {
+  const fromLeft = diagramSettings.shared.fromLeft
+  const heightDiff = diagramSettings.shared.heightDiff
+  const segmentCount = getAvailableSegmentCount(hoursToShow, weatherData.hourly.length)
+  const spacing = getDiagramStep(segmentCount)
+  let min, max
+  for (let i = 0; i <= segmentCount; i++) {
+    const temp = shouldRound(roundedGraph, weatherData.hourly[i].temp)
+    min = temp < min || min == undefined ? temp : min
+    max = temp > max || max == undefined ? temp : max
+  }
+
+  const diff = max - min
+
+  const points = []
+  for (let i = 0; i <= segmentCount; i++) {
+    const hourData = weatherData.hourly[i]
+    const nextHourTemp = shouldRound(roundedGraph, weatherData.hourly[i + 1].temp)
+    const currentTemp = i == 0 ? weatherData.current.temp : hourData.temp
+    const delta = diff > 0 ? (shouldRound(roundedGraph, currentTemp) - min) / diff : 0.5
+    const nextDelta = diff > 0 ? (nextHourTemp - min) / diff : 0.5
+    const dayData = findDailyDataForEpoch(hourData.dt)
+    const isNightMode = hourData.dt > dayData.sunset || hourData.dt < dayData.sunrise
+    const condition = i == 0 ? weatherData.current.weather[0].id : hourData.weather[0].id
+    const graphBaseX = spacing * i + fromLeft
+    const contentBaseX = graphBaseX - fromLeft
+    const tempLayout =
+      i == 0 ? diagramSettings.hourly.currentTemp : diagramSettings.hourly.forecastTemp
+
+    points.push({
+      condition,
+      conditionDigit: Math.floor(condition / 100),
+      contentBaseX,
+      delta,
+      graphBaseX,
+      hourLabel: i == 0 ? t("diagram.now") : formatDiagramHour(hourData.dt),
+      isNightMode,
+      nextDelta: i < segmentCount ? nextDelta : null,
+      tempFontSize: tempLayout.fontSize,
+      tempHeight: tempLayout.height,
+      tempLabel: shouldRound(roundedTemp, currentTemp) + "°",
+      tempWidth: tempLayout.width,
+      tempX: contentBaseX + tempLayout.xOffset,
+      tempY: tempLayout.y - heightDiff * delta,
+      verticalX: graphBaseX + diagramSettings.hourly.verticalXOffset,
+    })
+  }
+
+  return { fromLeft, heightDiff, points, spacing }
+}
+
+function renderHourlyDiagram(column, model) {
+  const diagramStack = createDiagramStack(column)
+
+  drawLine(
+    0,
+    diagramSettings.shared.topRuleY,
+    diagramSettings.canvas.width,
+    diagramSettings.shared.topRuleY,
+    1,
+    linecolor
+  )
+
+  for (const point of model.points) {
+    if (point.nextDelta != null) {
+      drawTemperatureSegment(
+        point.graphBaseX,
+        point.graphBaseX + model.spacing,
+        point.delta,
+        point.nextDelta,
+        model.heightDiff,
+        point.isNightMode ? nightColor : accentColor
+      )
+    }
+
+    drawLine(
+      point.verticalX,
+      diagramSettings.shared.verticalBottomY,
+      point.verticalX,
+      diagramSettings.shared.verticalBottomY -
+        model.heightDiff * point.delta -
+        diagramSettings.shared.verticalHeightOffset,
+      2,
+      linecolor
+    )
+
+    drawShadowedTextC(
+      point.tempLabel,
+      point.tempFontSize,
+      point.tempX,
+      point.tempY,
+      point.tempWidth,
+      point.tempHeight,
+      getConditionColor(point.conditionDigit, point.isNightMode ? linecolor : accentColor)
+    )
+
+    drawConditionSymbol(
+      point.condition,
+      point.contentBaseX + diagramSettings.hourly.iconXOffset,
+      diagramSettings.shared.iconY - model.heightDiff * point.delta,
+      point.isNightMode
+    )
+
+    drawShadowedTextC(
+      point.hourLabel,
+      18,
+      point.contentBaseX + diagramSettings.hourly.labelXOffset,
+      diagramSettings.shared.labelY,
+      diagramSettings.hourly.labelWidth,
+      diagramSettings.hourly.labelHeight,
+      point.isNightMode ? linecolor : accentColor
+    )
+  }
+
+  drawLine(
+    0,
+    diagramSettings.shared.bottomRuleY,
+    diagramSettings.canvas.width,
+    diagramSettings.shared.bottomRuleY,
+    1,
+    linecolor
+  )
+  diagramStack.addImage(drawContext.getImage())
+}
+
+function buildDailyDiagramModel() {
+  const fromLeft = diagramSettings.shared.fromLeft
+  const heightDiff = diagramSettings.shared.heightDiff
+  const segmentCount = getAvailableSegmentCount(daysToShow, weatherData.daily.length)
+  const spacing = getDiagramStep(segmentCount)
+  let min, max
+  for (let i = 0; i <= segmentCount; i++) {
+    const maxTemp = shouldRound(roundedGraph, weatherData.daily[i].temp.max)
+    const minTemp = shouldRound(roundedGraph, weatherData.daily[i].temp.min)
+    min = maxTemp < min || min == undefined ? maxTemp : min
+    max = maxTemp > max || max == undefined ? maxTemp : max
+    min = minTemp < min || min == undefined ? minTemp : min
+    max = minTemp > max || max == undefined ? minTemp : max
+  }
+
+  const diff = max - min
+  const weekday = strings.diagram.weekdays
+
+  const maxPoints = []
+  for (let i = 0; i <= segmentCount; i++) {
+    const dayData = weatherData.daily[i]
+    const temp = shouldRound(roundedGraph, dayData.temp.max)
+    const nextTemp = shouldRound(roundedGraph, weatherData.daily[i + 1].temp.max)
+    const delta = diff > 0 ? (temp - min) / diff : 0.5
+    const nextDelta = diff > 0 ? (nextTemp - min) / diff : 0.5
+    const condition = i == 0 ? weatherData.current.weather[0].id : dayData.weather[0].id
+    const graphBaseX = spacing * i + fromLeft
+    const contentBaseX = graphBaseX - fromLeft
+
+    maxPoints.push({
+      condition,
+      conditionDigit: Math.floor(condition / 100),
+      contentBaseX,
+      dayLabel: i == 0 ? t("diagram.today") : weekday[epochToDate(dayData.dt).getDay()],
+      delta,
+      graphBaseX,
+      nextDelta: i < segmentCount ? nextDelta : null,
+      tempLabel: shouldRound(roundedTemp, dayData.temp.max) + "°",
+    })
+  }
+
+  const minPoints = []
+  for (let i = 0; i < segmentCount; i++) {
+    const dayData = weatherData.daily[i]
+    const temp = shouldRound(roundedGraph, dayData.temp.min)
+    const nextTemp = shouldRound(roundedGraph, weatherData.daily[i + 1].temp.min)
+    const delta = diff > 0 ? (temp - min) / diff : 0.5
+    const nextDelta = diff > 0 ? (nextTemp - min) / diff : 0.5
+    const condition = i == 0 ? weatherData.current.weather[0].id : dayData.weather[0].id
+    const graphBaseX = spacing * i + fromLeft + spacing / 2
+    const contentBaseX = graphBaseX - fromLeft
+
+    minPoints.push({
+      condition,
+      conditionDigit: Math.floor(condition / 100),
+      contentBaseX,
+      delta,
+      graphBaseX,
+      nextDelta: i < segmentCount - 1 ? nextDelta : null,
+      tempLabel: shouldRound(roundedTemp, dayData.temp.min) + "°",
+    })
+  }
+
+  return { heightDiff, maxPoints, minPoints, spacing }
+}
+
+function renderDailyDiagram(column, model) {
+  const diagramStack = createDiagramStack(column)
+
+  for (const point of model.maxPoints) {
+    if (point.nextDelta != null) {
+      drawTemperatureSegment(
+        point.graphBaseX,
+        point.graphBaseX + model.spacing,
+        point.delta,
+        point.nextDelta,
+        model.heightDiff,
+        accentColor
+      )
+    }
+
+    drawLine(
+      point.graphBaseX + diagramSettings.daily.verticalXOffset,
+      diagramSettings.shared.verticalBottomY,
+      point.graphBaseX + diagramSettings.daily.verticalXOffset,
+      diagramSettings.shared.verticalBottomY -
+        model.heightDiff * point.delta -
+        diagramSettings.shared.verticalHeightOffset,
+      2,
+      linecolor
+    )
+
+    drawShadowedTextC(
+      point.tempLabel,
+      diagramSettings.daily.tempFontSize,
+      point.contentBaseX + diagramSettings.daily.textXOffset,
+      diagramSettings.daily.maxTempY - model.heightDiff * point.delta,
+      diagramSettings.daily.tempWidth,
+      diagramSettings.daily.tempHeight,
+      getConditionColor(point.conditionDigit, accentColor)
+    )
+
+    drawConditionSymbol(
+      point.condition,
+      point.contentBaseX + diagramSettings.daily.iconXOffset,
+      diagramSettings.shared.iconY - model.heightDiff * point.delta,
+      false
+    )
+
+    drawShadowedTextC(
+      point.dayLabel,
+      18,
+      point.contentBaseX + diagramSettings.daily.labelXOffset,
+      diagramSettings.shared.labelY,
+      diagramSettings.daily.labelWidth,
+      diagramSettings.daily.labelHeight,
+      Color.white()
+    )
+  }
+
+  for (const point of model.minPoints) {
+    if (point.nextDelta != null) {
+      drawTemperatureSegment(
+        point.graphBaseX,
+        point.graphBaseX + model.spacing,
+        point.delta,
+        point.nextDelta,
+        model.heightDiff,
+        nightColor
+      )
+    }
+
+    drawShadowedTextC(
+      point.tempLabel,
+      diagramSettings.daily.tempFontSize,
+      point.contentBaseX + diagramSettings.daily.textXOffset,
+      diagramSettings.daily.minTempY - model.heightDiff * point.delta,
+      diagramSettings.daily.tempWidth,
+      diagramSettings.daily.tempHeight,
+      getConditionColor(point.conditionDigit, linecolor)
+    )
+
+    drawConditionSymbol(
+      point.condition,
+      point.contentBaseX + diagramSettings.daily.iconXOffset,
+      diagramSettings.shared.iconY - model.heightDiff * point.delta,
+      true
+    )
+  }
+
+  drawLine(
+    0,
+    diagramSettings.shared.bottomRuleY,
+    diagramSettings.canvas.width,
+    diagramSettings.shared.bottomRuleY,
+    1,
+    linecolor
+  )
+  diagramStack.addImage(drawContext.getImage())
 }
 
 /*
@@ -1857,101 +2053,121 @@ function provideText(string, container, format) {
  * ===================================
  */
 
-// Draw the vertical line in the tomorrow view.
-function drawVerticalLine(color, height) {
-  
-  const width = 2
-  
-  let draw = new DrawContext()
-  draw.opaque = false
-  draw.respectScreenScale = true
-  draw.size = new Size(width,height)
-  
-  let barPath = new Path()
-  const barHeight = height
-  barPath.addRoundedRect(new Rect(0, 0, width, height), width/2, width/2)
-  draw.addPath(barPath)
-  draw.setFillColor(color)
-  draw.fillPath()
-  
-  return draw.getImage()
+function createDiagramContext() {
+  let context = new DrawContext()
+  context.size = new Size(diagramSettings.canvas.width, diagramSettings.canvas.height)
+  context.opaque = false
+  context.setTextAlignedCenter()
+  return context
 }
 
-// Draw the temp bar.
-function drawTempBar() {
+function createDiagramStack(column) {
+  resetDiagramContext()
 
-  // Set the size of the temp bar.
-  const tempBarWidth = 200
-  const tempBarHeight = 20
-  
-  // Calculate the current percentage of the high-low range.
-  let percent = (weatherData.currentTemp - weatherData.todayLow) / (weatherData.todayHigh - weatherData.todayLow)
+  let diagramStack = column.addStack()
+  diagramStack.layoutHorizontally()
+  diagramStack.setPadding(0, 0, 0, 0)
+  diagramStack.borderWidth = 0
 
-  // If we're out of bounds, clip it.
-  if (percent < 0) {
-    percent = 0
-  } else if (percent > 1) {
-    percent = 1
+  return diagramStack
+}
+
+function resetDiagramContext() {
+  drawContext = createDiagramContext()
+}
+
+function drawTemperatureSegment(x1, x2, delta1, delta2, heightDiff, color) {
+  drawLine(
+    x1,
+    diagramSettings.shared.graphLineY - heightDiff * delta1,
+    x2,
+    diagramSettings.shared.graphLineY - heightDiff * delta2,
+    4,
+    shadow1
+  )
+  drawLine(
+    x1,
+    diagramSettings.shared.graphShadowLowY - heightDiff * delta1,
+    x2,
+    diagramSettings.shared.graphShadowLowY - heightDiff * delta2,
+    4,
+    shadow2
+  )
+  drawLine(
+    x1,
+    diagramSettings.shared.graphHighlightY - heightDiff * delta1,
+    x2,
+    diagramSettings.shared.graphHighlightY - heightDiff * delta2,
+    4,
+    color
+  )
+}
+
+function drawShadowedTextC(text, fontSize, x, y, w, h, color) {
+  drawTextC(text, fontSize, x + 1, y + 1, w, h, shadow1)
+  drawTextC(text, fontSize, x + 2, y + 2, w, h, shadow2)
+  drawTextC(text, fontSize, x + 3, y + 3, w, h, shadow3)
+  drawTextC(text, fontSize, x, y, w, h, color)
+}
+
+function getConditionColor(conditionDigit, defaultColor) {
+  if (conditionDigit === 2 || conditionDigit === 3 || conditionDigit === 5) {
+    return rainColor
   }
 
-  // Determine the scaled x-value for the current temp.
-  const currPosition = (tempBarWidth - tempBarHeight) * percent
+  if (conditionDigit === 6) {
+    return Color.white()
+  }
 
-  // Start our draw context.
-  let draw = new DrawContext()
-  draw.opaque = false
-  draw.respectScreenScale = true
-  draw.size = new Size(tempBarWidth, tempBarHeight)
-
-  // Make the path for the bar.
-  let barPath = new Path()
-  const barHeight = tempBarHeight - 10
-  barPath.addRoundedRect(new Rect(0, 5, tempBarWidth, barHeight), barHeight / 2, barHeight / 2)
-  draw.addPath(barPath)
-  
-  // Determine the color.
-  const barColor = textFormat.battery.color || textFormat.defaultText.color
-  draw.setFillColor(new Color(textFormat.tinyTemp.color || textFormat.defaultText.color, 0.5))
-  draw.fillPath()
-
-  // Make the path for the current temp indicator.
-  let currPath = new Path()
-  currPath.addEllipse(new Rect(currPosition, 0, tempBarHeight, tempBarHeight))
-  draw.addPath(currPath)
-  draw.setFillColor(new Color(textFormat.tinyTemp.color || textFormat.defaultText.color, 1))
-  draw.fillPath()
-
-  return draw.getImage()
+  return defaultColor
 }
 
+function drawConditionSymbol(condition, x, y, isNightMode) {
+  const previousNight = night
+  night = isNightMode
+  drawImage(symbolForCondition(condition), x, y)
+  night = previousNight
+}
 
-// converts the retrieved time in open
-// weather to a date to work with
-function epochToDate(epoch){
+function findDailyDataForEpoch(epoch) {
+  for (const day of weatherData.daily) {
+    if (isSameDay(epochToDate(day.dt), epochToDate(epoch))) {
+      return day
+    }
+  }
+
+  return weatherData.daily[0]
+}
+
+function formatDiagramHour(epoch) {
+  let hour = epochToDate(epoch).getHours()
+
+  if (diagram12Hours) {
+    hour = hour > 12 ? hour - 12 : hour == 0 ? "12a" : hour == 12 ? "12p" : hour
+  }
+
+  if (typeof hour === "number" && hour <= 9) {
+    return "0" + hour
+  }
+
+  return hour.toString()
+}
+
+function epochToDate(epoch) {
   return new Date(epoch * 1000)
 }
 
-// drawText()
-function drawText(text, fontSize, x, y, color = Color.black()){
-  drawContext.setFont(Font.boldSystemFont(fontSize))
-  drawContext.setTextColor(color)
-  drawContext.drawText(new String(text).toString(), new Point(x, y))
-}
-
-// drawImage()
-function drawImage(image, x, y){
+function drawImage(image, x, y) {
   drawContext.drawImageAtPoint(image, new Point(x, y))
 }
 
-// drawText()
-function drawTextC(text, fontSize, x, y, w, h, color = Color.black()){
+function drawTextC(text, fontSize, x, y, w, h, color = Color.black()) {
   drawContext.setFont(Font.boldSystemFont(fontSize))
   drawContext.setTextColor(color)
   drawContext.drawTextInRect(new String(text).toString(), new Rect(x, y, w, h))
 }
 
-// drawLine()
-function drawLine(x1, y1, x2, y2, width, color){
+function drawLine(x1, y1, x2, y2, width, color) {
   const path = new Path()
   path.move(new Point(x1, y1))
   path.addLine(new Point(x2, y2))
@@ -1961,66 +2177,71 @@ function drawLine(x1, y1, x2, y2, width, color){
   drawContext.strokePath()
 }
 
-// checks and see if we should round
-function shouldRound(should, value){
-  return ((should) ? Math.round(value) : value)
+function shouldRound(should, value) {
+  return should ? Math.round(value) : value
 }
 
-
 // This function returns an SFSymbol image for a weather condition.
-function symbolForCondition(cond){
-//   console.log("night in symbol function: " + night)
-  
+function symbolForCondition(cond) {
   // Define our symbol equivalencies.
   let symbols = {
-  
     // Thunderstorm
-    "2": function() {
+    2: function () {
       return "cloud.bolt.rain.fill"
     },
-    
+
     // Drizzle
-    "3": function() {
+    3: function () {
       return "cloud.drizzle.fill"
     },
-    
+
     // Rain
-    "5": function() {
-      return (cond == 511) ? "cloud.sleet.fill" : "cloud.rain.fill"
+    5: function () {
+      return cond == 511 ? "cloud.sleet.fill" : "cloud.rain.fill"
     },
-    
+
     // Snow
-    "6": function() {
-      return (cond >= 611 && cond <= 613) ? "cloud.snow.fill" : "snow"
+    6: function () {
+      return cond >= 611 && cond <= 613 ? "cloud.snow.fill" : "snow"
     },
-    
+
     // Atmosphere
-    "7": function() {
-      if (cond == 781) { return "tornado" }
-      if (cond == 701 || cond == 741) { return "cloud.fog.fill" }
+    7: function () {
+      if (cond == 781) {
+        return "tornado"
+      }
+      if (cond == 701 || cond == 741) {
+        return "cloud.fog.fill"
+      }
       return night ? "cloud.fog.fill" : "sun.haze.fill"
     },
-    
+
     // Clear and clouds
-    "8": function() {
-      if (cond == 800) { return night ? "moon.stars.fill" : "sun.max.fill" }
-      if (cond == 802 || cond == 803) { return night ? "cloud.moon.fill" : "cloud.sun.fill" }
+    8: function () {
+      if (cond == 800) {
+        return night ? "moon.stars.fill" : "sun.max.fill"
+      }
+      if (cond == 802 || cond == 803) {
+        return night ? "cloud.moon.fill" : "cloud.sun.fill"
+      }
       return "cloud.fill"
-    }
+    },
   }
-  
+
   // Find out the first digit.
   let conditionDigit = Math.floor(cond / 100)
-  
+
   // Get the symbol.
   let sfs = SFSymbol.named(symbols[conditionDigit]())
   sfs.applyFont(Font.systemFont(34))
   return sfs.image
 }
 
-
-// checks days so that the line will be 
-// orange at sunrise time
-function isSameDay(date1, date2){
-  return (date1.getYear() == date2.getYear() && date1.getMonth() == date2.getMonth() &&  date1.getDate() == date2.getDate())
+// Returns true when both Date objects fall on the same calendar day.
+function isSameDay(date1, date2) {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  )
 }
