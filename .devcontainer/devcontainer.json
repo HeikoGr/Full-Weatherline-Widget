@@ -6,7 +6,7 @@
       "version": "22"
     }
   },
-  "postCreateCommand": "npm install",
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y git-lfs ripgrep && git lfs install && npm install",
   "customizations": {
     "vscode": {
       "extensions": [
