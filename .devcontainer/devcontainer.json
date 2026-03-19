@@ -6,7 +6,7 @@
       "version": "22"
     }
   },
-  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y git-lfs ripgrep && git lfs install && npm install",
+  "postCreateCommand": "sudo chown -R $(id -u):$(id -g) /workspaces/Full-Weatherline-Widget && sudo apt-get update && sudo apt-get install -y git-lfs ripgrep && sudo git lfs update --force && npm install",
   "customizations": {
     "vscode": {
       "extensions": [
